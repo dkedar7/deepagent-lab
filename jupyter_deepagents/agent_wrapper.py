@@ -131,7 +131,18 @@ class AgentWrapper:
 
                     # Handle LangChain message objects (AIMessage, HumanMessage, etc.)
                     if hasattr(last_message, 'content'):
-                        response_text = last_message.content
+                        content = last_message.content
+                        # Convert content to string if it's not already
+                        if isinstance(content, str):
+                            response_text = content
+                        elif isinstance(content, list):
+                            # Handle list of content blocks
+                            response_text = " ".join(
+                                block.get("text", str(block)) if isinstance(block, dict) else str(block)
+                                for block in content
+                            )
+                        else:
+                            response_text = str(content)
                     elif isinstance(last_message, dict):
                         response_text = last_message.get("content", str(last_message))
                     else:
@@ -179,20 +190,41 @@ class AgentWrapper:
             # Prepare the input for the agent
             agent_input = {"messages": [{"role": "user", "content": message}]}
 
-            # Stream from the agent
-            for chunk in self.agent.stream(agent_input, config=config or {}):
-                # Adjust this based on your agent's streaming output format
-                # Extract content from LangChain message objects if needed
-                chunk_content = chunk
-                if isinstance(chunk, dict) and "messages" in chunk:
-                    messages = chunk["messages"]
-                    if messages and hasattr(messages[-1], 'content'):
-                        chunk_content = messages[-1].content
+            # Stream from the agent using "updates" mode to get intermediate steps
+            for update in self.agent.stream(agent_input, config=config or {}, stream_mode="updates"):
+                # update is a dict like {node_name: state_data}
+                if isinstance(update, dict):
+                    for node_name, state_data in update.items():
+                        # Extract message content from the state update
+                        if isinstance(state_data, dict) and "messages" in state_data:
+                            messages = state_data["messages"]
+                            if messages:
+                                # Get the last message in this update
+                                last_message = messages[-1] if isinstance(messages, list) else messages
 
-                yield {
-                    "chunk": str(chunk_content),
-                    "status": "streaming"
-                }
+                                # Extract content from LangChain message objects
+                                if hasattr(last_message, 'content'):
+                                    content = last_message.content
+
+                                    # Convert content to string if it's not already
+                                    if isinstance(content, str):
+                                        content_str = content
+                                    elif isinstance(content, list):
+                                        # Handle list of content blocks (e.g., [{"text": "...", "type": "text"}])
+                                        content_str = " ".join(
+                                            block.get("text", str(block)) if isinstance(block, dict) else str(block)
+                                            for block in content
+                                        )
+                                    else:
+                                        content_str = str(content)
+
+                                    # Only yield if there's actual content
+                                    if content_str:
+                                        yield {
+                                            "chunk": content_str,
+                                            "node": node_name,
+                                            "status": "streaming"
+                                        }
 
             yield {
                 "status": "complete"

@@ -169,6 +169,22 @@
   white-space: pre-wrap;
 }
 
+/* Intermediate messages styling */
+.deepagents-message-intermediates {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--jp-border-color2);
+  opacity: 0.6;
+}
+
+.deepagents-intermediate-message {
+  font-size: 11px;
+  color: var(--jp-ui-font-color2);
+  padding: 4px 0;
+  font-style: italic;
+  line-height: 1.4;
+}
+
 /* Typing indicator */
 .deepagents-typing-indicator {
   display: flex;

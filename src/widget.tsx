@@ -11,6 +11,7 @@ interface Message {
   content: string;
   timestamp: Date;
   error?: boolean;
+  intermediates?: string[];
 }
 
 /**
@@ -64,6 +65,11 @@ const ChatComponent: React.FC = () => {
     setMessages(prev => [...prev, systemMessage]);
   };
 
+  const getXSRFToken = (): string => {
+    const matches = document.cookie.match('\\b_xsrf=([^;]*)\\b');
+    return matches ? matches[1] : '';
+  };
+
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
 
@@ -75,49 +81,135 @@ const ChatComponent: React.FC = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const savedInput = inputValue;
     setInputValue('');
     setIsLoading(true);
 
+    // Create a placeholder for intermediate updates
+    const assistantMessageId = (Date.now() + 1).toString();
+    let intermediateMessages: string[] = [];
+    let finalContent = '';
+
     try {
-      const response = await requestAPI<any>('chat', {
-        method: 'POST',
-        body: JSON.stringify({
-          message: inputValue,
-          stream: false
-        })
-      });
+      const xsrfToken = getXSRFToken();
+      const response = await fetch(
+        `/jupyter-deepagents/chat`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-XSRFToken': xsrfToken
+          },
+          body: JSON.stringify({
+            message: savedInput,
+            stream: true
+          })
+        }
+      );
 
-      let assistantContent = '';
-      let hasError = false;
-
-      if (response.status === 'error') {
-        assistantContent = response.error || 'An error occurred';
-        hasError = true;
-      } else {
-        assistantContent = response.response || JSON.stringify(response);
+      if (!response.body) {
+        throw new Error('No response body');
       }
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: assistantContent,
-        timestamp: new Date(),
-        error: hasError
-      };
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
 
-      setMessages(prev => [...prev, assistantMessage]);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              console.log('Received SSE data:', data);
+
+              if (data.status === 'streaming' && data.chunk) {
+                // Add to intermediate messages
+                intermediateMessages.push(data.chunk);
+                finalContent = data.chunk; // Keep updating final content
+                console.log('Updated content:', finalContent, 'Intermediates:', intermediateMessages.length)
+
+                // Update the message in place
+                setMessages(prev => {
+                  const existing = prev.find(m => m.id === assistantMessageId);
+                  if (existing) {
+                    return prev.map(m =>
+                      m.id === assistantMessageId
+                        ? { ...m, content: finalContent, intermediates: [...intermediateMessages] }
+                        : m
+                    );
+                  } else {
+                    return [...prev, {
+                      id: assistantMessageId,
+                      role: 'assistant' as const,
+                      content: finalContent,
+                      timestamp: new Date(),
+                      intermediates: [...intermediateMessages]
+                    }];
+                  }
+                });
+              } else if (data.status === 'complete') {
+                console.log('Stream complete. Final content:', finalContent);
+                // Final update - remove intermediates, keep only final content
+                setMessages(prev => {
+                  const existing = prev.find(m => m.id === assistantMessageId);
+                  if (existing) {
+                    // Update existing message
+                    return prev.map(m =>
+                      m.id === assistantMessageId
+                        ? { ...m, intermediates: undefined }
+                        : m
+                    );
+                  } else if (finalContent) {
+                    // Add message if it doesn't exist but we have content
+                    return [...prev, {
+                      id: assistantMessageId,
+                      role: 'assistant' as const,
+                      content: finalContent,
+                      timestamp: new Date()
+                    }];
+                  }
+                  return prev;
+                });
+              } else if (data.status === 'error') {
+                console.error('Stream error:', data.error);
+                setMessages(prev => [...prev, {
+                  id: assistantMessageId,
+                  role: 'assistant' as const,
+                  content: data.error || 'An error occurred',
+                  timestamp: new Date(),
+                  error: true
+                }]);
+              }
+            } catch (e) {
+              console.error('Error parsing SSE data:', e);
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error('Error sending message:', error);
 
       const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: assistantMessageId,
         role: 'assistant',
         content: `Error: ${error instanceof Error ? error.message : 'Failed to send message'}`,
         timestamp: new Date(),
         error: true
       };
 
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => {
+        const existing = prev.find(m => m.id === assistantMessageId);
+        if (existing) {
+          return prev.map(m => m.id === assistantMessageId ? errorMessage : m);
+        } else {
+          return [...prev, errorMessage];
+        }
+      });
     } finally {
       setIsLoading(false);
       inputRef.current?.focus();
@@ -206,6 +298,15 @@ const ChatComponent: React.FC = () => {
                 </span>
               </div>
               <div className="deepagents-message-content">
+                {message.intermediates && message.intermediates.length > 1 && (
+                  <div className="deepagents-message-intermediates">
+                    {message.intermediates.slice(0, -1).map((intermediate, idx) => (
+                      <div key={idx} className="deepagents-intermediate-message">
+                        {intermediate}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {message.content}
               </div>
             </div>
