@@ -23,7 +23,8 @@ class ChatHandler(APIHandler):
         Expected JSON payload:
         {
             "message": "user message",
-            "stream": false  // optional, default false
+            "stream": false,  // optional, default false
+            "thread_id": "uuid"  // optional, for conversation history
         }
         """
         try:
@@ -31,6 +32,7 @@ class ChatHandler(APIHandler):
             data = self.get_json_body()
             message = data.get("message")
             use_stream = data.get("stream", False)
+            thread_id = data.get("thread_id")
 
             if not message:
                 raise HTTPError(400, "Message is required")
@@ -44,7 +46,7 @@ class ChatHandler(APIHandler):
                 self.set_header("Cache-Control", "no-cache")
                 self.set_header("Connection", "keep-alive")
 
-                for chunk in agent.stream(message):
+                for chunk in agent.stream(message, thread_id=thread_id):
                     # Send as server-sent event
                     event_data = f"data: {json.dumps(chunk)}\n\n"
                     self.write(event_data)
@@ -53,7 +55,7 @@ class ChatHandler(APIHandler):
                 self.finish()
             else:
                 # Regular invoke
-                result = agent.invoke(message)
+                result = agent.invoke(message, thread_id=thread_id)
                 self.finish(json.dumps(result))
 
         except HTTPError:

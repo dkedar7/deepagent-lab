@@ -91,13 +91,14 @@ class AgentWrapper:
             importlib.reload(sys.modules[self.agent_module_path])
         self._load_agent()
 
-    def invoke(self, message: str, config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def invoke(self, message: str, config: Optional[Dict[str, Any]] = None, thread_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Invoke the agent with a message.
 
         Args:
             message: The user message to send to the agent
             config: Optional configuration for the agent
+            thread_id: Optional thread ID for conversation history
 
         Returns:
             Dict containing the agent's response
@@ -118,8 +119,14 @@ class AgentWrapper:
             # Adjust this based on your agent's expected input format
             agent_input = {"messages": [{"role": "user", "content": message}]}
 
+            # Prepare config with thread_id if provided
+            agent_config = config or {}
+            if thread_id:
+                agent_config["configurable"] = agent_config.get("configurable", {})
+                agent_config["configurable"]["thread_id"] = thread_id
+
             # Invoke the agent
-            result = self.agent.invoke(agent_input, config=config or {})
+            result = self.agent.invoke(agent_input, config=agent_config)
 
             # Extract the response
             # Adjust this based on your agent's output format
@@ -163,13 +170,14 @@ class AgentWrapper:
                 "status": "error"
             }
 
-    def stream(self, message: str, config: Optional[Dict[str, Any]] = None) -> Iterator[Dict[str, Any]]:
+    def stream(self, message: str, config: Optional[Dict[str, Any]] = None, thread_id: Optional[str] = None) -> Iterator[Dict[str, Any]]:
         """
         Stream responses from the agent.
 
         Args:
             message: The user message to send to the agent
             config: Optional configuration for the agent
+            thread_id: Optional thread ID for conversation history
 
         Yields:
             Dict containing chunks of the agent's response
@@ -190,8 +198,14 @@ class AgentWrapper:
             # Prepare the input for the agent
             agent_input = {"messages": [{"role": "user", "content": message}]}
 
+            # Prepare config with thread_id if provided
+            agent_config = config or {}
+            if thread_id:
+                agent_config["configurable"] = agent_config.get("configurable", {})
+                agent_config["configurable"]["thread_id"] = thread_id
+
             # Stream from the agent using "updates" mode to get intermediate steps
-            for update in self.agent.stream(agent_input, config=config or {}, stream_mode="updates"):
+            for update in self.agent.stream(agent_input, config=agent_config, stream_mode="updates"):
                 # update is a dict like {node_name: state_data}
                 if isinstance(update, dict):
                     for node_name, state_data in update.items():
@@ -202,8 +216,18 @@ class AgentWrapper:
                                 # Get the last message in this update
                                 last_message = messages[-1] if isinstance(messages, list) else messages
 
-                                # Extract content from LangChain message objects
-                                if hasattr(last_message, 'content'):
+                                # Check if this is a ToolMessage
+                                message_type = last_message.__class__.__name__ if hasattr(last_message, '__class__') else None
+
+                                # Handle ToolMessage (tool outputs)
+                                # Skip ToolMessage entirely - don't send to frontend
+                                if message_type == 'ToolMessage':
+                                    # Don't yield anything for ToolMessages
+                                    # They will not appear in the UI at all
+                                    pass
+
+                                # Handle regular messages (including AIMessage with tool calls)
+                                elif hasattr(last_message, 'content'):
                                     content = last_message.content
 
                                     # Convert content to string if it's not already
@@ -218,7 +242,40 @@ class AgentWrapper:
                                     else:
                                         content_str = str(content)
 
-                                    # Only yield if there's actual content
+                                    # Check for tool calls in AIMessage
+                                    tool_calls = None
+                                    if hasattr(last_message, 'tool_calls') and last_message.tool_calls:
+                                        tool_calls = []
+                                        for tc in last_message.tool_calls:
+                                            tool_calls.append({
+                                                "id": tc.get("id") if isinstance(tc, dict) else getattr(tc, 'id', None),
+                                                "name": tc.get("name") if isinstance(tc, dict) else getattr(tc, 'name', None),
+                                                "args": tc.get("args") if isinstance(tc, dict) else getattr(tc, 'args', {})
+                                            })
+
+                                    # Clean content_str: strip whitespace
+                                    content_str = content_str.strip() if content_str else ""
+
+                                    # Filter out tool call dictionaries from content
+                                    # These often appear as strings like "{'id': '...', 'input': {...}, 'name': '...', 'type': 'tool_use'}"
+                                    if content_str and tool_calls:
+                                        # Remove lines that look like tool call dictionaries
+                                        import re
+                                        # Pattern to match tool call dictionary representations
+                                        tool_dict_pattern = r"\{'id':\s*'[^']+',\s*'input':\s*\{.*?\},\s*'name':\s*'[^']+',\s*'type':\s*'tool_use'\}"
+                                        content_str = re.sub(tool_dict_pattern, '', content_str, flags=re.DOTALL)
+                                        content_str = content_str.strip()
+
+                                    # Yield tool calls (if any)
+                                    if tool_calls:
+                                        yield {
+                                            "tool_calls": tool_calls,
+                                            "node": node_name,
+                                            "status": "streaming"
+                                        }
+
+                                    # Yield content separately, only if non-empty
+                                    # This ensures tool call text doesn't appear in message content
                                     if content_str:
                                         yield {
                                             "chunk": content_str,

@@ -3,6 +3,15 @@ import { ReactWidget } from '@jupyterlab/apputils';
 import { requestAPI } from './handler';
 
 /**
+ * Tool call interface
+ */
+interface ToolCall {
+  id: string;
+  name: string;
+  args: Record<string, any>;
+}
+
+/**
  * Message interface for chat messages
  */
 interface Message {
@@ -12,6 +21,7 @@ interface Message {
   timestamp: Date;
   error?: boolean;
   intermediates?: string[];
+  toolCalls?: ToolCall[];
 }
 
 /**
@@ -22,6 +32,7 @@ const ChatComponent: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [agentStatus, setAgentStatus] = useState<'unknown' | 'healthy' | 'error'>('unknown');
+  const [threadId, setThreadId] = useState<string>(() => crypto.randomUUID());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -85,10 +96,13 @@ const ChatComponent: React.FC = () => {
     setInputValue('');
     setIsLoading(true);
 
+    console.log('Sending message with thread_id:', threadId);
+
     // Create a placeholder for intermediate updates
     const assistantMessageId = (Date.now() + 1).toString();
     let intermediateMessages: string[] = [];
     let finalContent = '';
+    let toolCalls: ToolCall[] = [];
 
     try {
       const xsrfToken = getXSRFToken();
@@ -102,7 +116,8 @@ const ChatComponent: React.FC = () => {
           },
           body: JSON.stringify({
             message: savedInput,
-            stream: true
+            stream: true,
+            thread_id: threadId
           })
         }
       );
@@ -127,11 +142,20 @@ const ChatComponent: React.FC = () => {
               const data = JSON.parse(line.slice(6));
               console.log('Received SSE data:', data);
 
-              if (data.status === 'streaming' && data.chunk) {
-                // Add to intermediate messages
-                intermediateMessages.push(data.chunk);
-                finalContent = data.chunk; // Keep updating final content
-                console.log('Updated content:', finalContent, 'Intermediates:', intermediateMessages.length)
+              if (data.status === 'streaming') {
+                // Handle tool calls
+                if (data.tool_calls) {
+                  data.tool_calls.forEach((tc: ToolCall) => {
+                    toolCalls.push({ ...tc });
+                  });
+                }
+
+                // Handle regular content
+                if (data.chunk) {
+                  intermediateMessages.push(data.chunk);
+                  finalContent = data.chunk; // Keep updating final content
+                  console.log('Updated content:', finalContent, 'Intermediates:', intermediateMessages.length)
+                }
 
                 // Update the message in place
                 setMessages(prev => {
@@ -139,7 +163,12 @@ const ChatComponent: React.FC = () => {
                   if (existing) {
                     return prev.map(m =>
                       m.id === assistantMessageId
-                        ? { ...m, content: finalContent, intermediates: [...intermediateMessages] }
+                        ? {
+                            ...m,
+                            content: finalContent,
+                            intermediates: [...intermediateMessages],
+                            toolCalls: toolCalls.length > 0 ? [...toolCalls] : undefined
+                          }
                         : m
                     );
                   } else {
@@ -148,31 +177,28 @@ const ChatComponent: React.FC = () => {
                       role: 'assistant' as const,
                       content: finalContent,
                       timestamp: new Date(),
-                      intermediates: [...intermediateMessages]
+                      intermediates: [...intermediateMessages],
+                      toolCalls: toolCalls.length > 0 ? [...toolCalls] : undefined
                     }];
                   }
                 });
               } else if (data.status === 'complete') {
                 console.log('Stream complete. Final content:', finalContent);
-                // Final update - remove intermediates, keep only final content
+                // Stream complete - keep intermediates visible
                 setMessages(prev => {
                   const existing = prev.find(m => m.id === assistantMessageId);
-                  if (existing) {
-                    // Update existing message
-                    return prev.map(m =>
-                      m.id === assistantMessageId
-                        ? { ...m, intermediates: undefined }
-                        : m
-                    );
-                  } else if (finalContent) {
-                    // Add message if it doesn't exist but we have content
+                  if (!existing && (finalContent || toolCalls.length > 0)) {
+                    // Add message if it doesn't exist but we have content or tool calls
                     return [...prev, {
                       id: assistantMessageId,
                       role: 'assistant' as const,
                       content: finalContent,
-                      timestamp: new Date()
+                      timestamp: new Date(),
+                      intermediates: intermediateMessages.length > 0 ? [...intermediateMessages] : undefined,
+                      toolCalls: toolCalls.length > 0 ? [...toolCalls] : undefined
                     }];
                   }
+                  // If message exists, leave it as is (with intermediates and tool calls)
                   return prev;
                 });
               } else if (data.status === 'error') {
@@ -241,10 +267,25 @@ const ChatComponent: React.FC = () => {
 
   const clearChat = () => {
     setMessages([]);
+    // Generate new thread_id for fresh conversation
+    setThreadId(crypto.randomUUID());
   };
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatToolArgs = (args: Record<string, any>, maxLength: number = 150): string => {
+    const truncated: Record<string, any> = {};
+    for (const [key, value] of Object.entries(args)) {
+      const strValue = JSON.stringify(value);
+      if (strValue.length > maxLength) {
+        truncated[key] = strValue.substring(0, maxLength) + '...';
+      } else {
+        truncated[key] = value;
+      }
+    }
+    return JSON.stringify(truncated);
   };
 
   return (
@@ -303,6 +344,15 @@ const ChatComponent: React.FC = () => {
                     {message.intermediates.slice(0, -1).map((intermediate, idx) => (
                       <div key={idx} className="deepagents-intermediate-message">
                         {intermediate}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {message.toolCalls && message.toolCalls.length > 0 && (
+                  <div className="deepagents-tool-calls">
+                    {message.toolCalls.map((toolCall, idx) => (
+                      <div key={idx} className="deepagents-tool-call">
+                        {toolCall.name}: {formatToolArgs(toolCall.args)}
                       </div>
                     ))}
                   </div>
