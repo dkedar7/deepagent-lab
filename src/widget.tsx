@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ReactWidget } from '@jupyterlab/apputils';
+import { JupyterFrontEnd } from '@jupyterlab/application';
+import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { requestAPI } from './handler';
+import ReactMarkdown from 'react-markdown';
 
 /**
  * Tool call interface
@@ -25,9 +28,17 @@ interface Message {
 }
 
 /**
+ * Chat component props
+ */
+interface ChatComponentProps {
+  shell: JupyterFrontEnd.IShell | null;
+  browserFactory: IFileBrowserFactory | null;
+}
+
+/**
  * Chat component
  */
-const ChatComponent: React.FC = () => {
+const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -96,7 +107,38 @@ const ChatComponent: React.FC = () => {
     setInputValue('');
     setIsLoading(true);
 
+    // Get current directory and focused widget
+    let currentDirectory = '';
+    let focusedWidget = '';
+
+    if (browserFactory) {
+      const browser = browserFactory.tracker.currentWidget;
+      if (browser) {
+        currentDirectory = browser.model.path;
+      }
+    }
+
+    // Get the currently focused widget from the shell
+    if (shell && shell.currentWidget) {
+      const current = shell.currentWidget;
+      const title = current.title.label;
+
+      // Check if it has a context (files like notebooks, text files, etc.)
+      if ((current as any).context?.path) {
+        focusedWidget = (current as any).context.path;
+      } else if (title === 'Launcher') {
+        focusedWidget = 'JupyterLab Launcher';
+      } else if (title.startsWith('Terminal')) {
+        focusedWidget = `Terminal: ${title}`;
+      } else if (title) {
+        // Generic widget with a title
+        focusedWidget = title;
+      }
+    }
+
     console.log('Sending message with thread_id:', threadId);
+    console.log('Current directory:', currentDirectory);
+    console.log('Focused widget:', focusedWidget);
 
     // Create a placeholder for intermediate updates
     const assistantMessageId = (Date.now() + 1).toString();
@@ -117,7 +159,9 @@ const ChatComponent: React.FC = () => {
           body: JSON.stringify({
             message: savedInput,
             stream: true,
-            thread_id: threadId
+            thread_id: threadId,
+            current_directory: currentDirectory,
+            focused_widget: focusedWidget
           })
         }
       );
@@ -351,9 +395,14 @@ const ChatComponent: React.FC = () => {
                 {message.toolCalls && message.toolCalls.length > 0 && (
                   <div className="deepagents-tool-calls">
                     {message.toolCalls.map((toolCall, idx) => (
-                      <div key={idx} className="deepagents-tool-call">
-                        {toolCall.name}: {formatToolArgs(toolCall.args)}
-                      </div>
+                      <details key={idx} className="deepagents-tool-call">
+                        <summary className="deepagents-tool-call-summary">
+                          {toolCall.name}
+                        </summary>
+                        <div className="deepagents-tool-call-args">
+                          {formatToolArgs(toolCall.args)}
+                        </div>
+                      </details>
                     ))}
                   </div>
                 )}
@@ -405,12 +454,23 @@ const ChatComponent: React.FC = () => {
  * A Lumino Widget that wraps a ChatComponent.
  */
 export class ChatWidget extends ReactWidget {
-  constructor() {
+  private shell: JupyterFrontEnd.IShell | null;
+  private browserFactory: IFileBrowserFactory | null;
+
+  constructor(
+    shell: JupyterFrontEnd.IShell | null = null,
+    browserFactory: IFileBrowserFactory | null = null
+  ) {
     super();
     this.addClass('deepagents-chat-widget');
+    this.shell = shell;
+    this.browserFactory = browserFactory;
   }
 
   render(): JSX.Element {
-    return <ChatComponent />;
+    return <ChatComponent
+      shell={this.shell}
+      browserFactory={this.browserFactory}
+    />;
   }
 }

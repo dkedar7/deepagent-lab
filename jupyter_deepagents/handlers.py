@@ -33,12 +33,24 @@ class ChatHandler(APIHandler):
             message = data.get("message")
             use_stream = data.get("stream", False)
             thread_id = data.get("thread_id")
+            current_directory = data.get("current_directory", "")
+            focused_widget = data.get("focused_widget", "")
 
             if not message:
                 raise HTTPError(400, "Message is required")
 
-            # Get agent instance
+            # Get root directory from server settings
+            root_dir = self.settings.get("server_root_dir", "")
+
+            # Get agent instance and set root directory
             agent = get_agent()
+            agent.set_root_dir(root_dir)
+
+            # Create context object
+            context = {
+                "current_directory": current_directory,
+                "focused_widget": focused_widget
+            }
 
             if use_stream:
                 # Stream response
@@ -46,7 +58,7 @@ class ChatHandler(APIHandler):
                 self.set_header("Cache-Control", "no-cache")
                 self.set_header("Connection", "keep-alive")
 
-                for chunk in agent.stream(message, thread_id=thread_id):
+                for chunk in agent.stream(message, thread_id=thread_id, context=context):
                     # Send as server-sent event
                     event_data = f"data: {json.dumps(chunk)}\n\n"
                     self.write(event_data)
@@ -55,7 +67,7 @@ class ChatHandler(APIHandler):
                 self.finish()
             else:
                 # Regular invoke
-                result = agent.invoke(message, thread_id=thread_id)
+                result = agent.invoke(message, thread_id=thread_id, context=context)
                 self.finish(json.dumps(result))
 
         except HTTPError:

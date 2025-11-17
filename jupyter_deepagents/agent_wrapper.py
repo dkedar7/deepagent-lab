@@ -91,7 +91,56 @@ class AgentWrapper:
             importlib.reload(sys.modules[self.agent_module_path])
         self._load_agent()
 
-    def invoke(self, message: str, config: Optional[Dict[str, Any]] = None, thread_id: Optional[str] = None) -> Dict[str, Any]:
+    def set_root_dir(self, root_dir: str):
+        """
+        Set the root directory on the agent's backend if it has one.
+
+        Args:
+            root_dir: The root directory path (JupyterLab launch directory)
+        """
+        if self.agent and hasattr(self.agent, 'backend'):
+            try:
+                # Import FilesystemBackend dynamically
+                from deepagents.tools.filesystem import FilesystemBackend
+                # Update the backend's root_dir
+                self.agent.backend = FilesystemBackend(root_dir=root_dir, virtual_mode=True)
+                print(f"Set agent backend root_dir to: {root_dir}")
+            except ImportError:
+                # FilesystemBackend not available, skip
+                pass
+            except Exception as e:
+                print(f"Warning: Could not set agent backend root_dir: {e}")
+
+    def _append_context_to_message(self, message: str, context: Optional[Dict[str, Any]]) -> str:
+        """
+        Append context information to the message.
+
+        Args:
+            message: The original user message
+            context: Context dict with current_directory and focused_widget
+
+        Returns:
+            Message with appended context
+        """
+        if not context:
+            return message
+
+        context_parts = []
+        if context.get("current_directory"):
+            context_parts.append(f"Current directory: {context['current_directory']}")
+        if context.get("focused_widget"):
+            focused = context['focused_widget']
+            # Check if it's a file path or special widget
+            if '/' in focused or focused.endswith(('.ipynb', '.py', '.txt', '.md')):
+                context_parts.append(f"Currently focused file: {focused}")
+            else:
+                context_parts.append(f"Currently focused: {focused}")
+
+        if context_parts:
+            return f"{message}\n\n" + "\n".join(context_parts)
+        return message
+
+    def invoke(self, message: str, config: Optional[Dict[str, Any]] = None, thread_id: Optional[str] = None, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Invoke the agent with a message.
 
@@ -115,9 +164,12 @@ class AgentWrapper:
             }
 
         try:
+            # Append context to message
+            message_with_context = self._append_context_to_message(message, context)
+
             # Prepare the input for the agent
             # Adjust this based on your agent's expected input format
-            agent_input = {"messages": [{"role": "user", "content": message}]}
+            agent_input = {"messages": [{"role": "user", "content": message_with_context}]}
 
             # Prepare config with thread_id if provided
             agent_config = config or {}
@@ -170,7 +222,7 @@ class AgentWrapper:
                 "status": "error"
             }
 
-    def stream(self, message: str, config: Optional[Dict[str, Any]] = None, thread_id: Optional[str] = None) -> Iterator[Dict[str, Any]]:
+    def stream(self, message: str, config: Optional[Dict[str, Any]] = None, thread_id: Optional[str] = None, context: Optional[Dict[str, Any]] = None) -> Iterator[Dict[str, Any]]:
         """
         Stream responses from the agent.
 
@@ -178,6 +230,7 @@ class AgentWrapper:
             message: The user message to send to the agent
             config: Optional configuration for the agent
             thread_id: Optional thread ID for conversation history
+            context: Optional context with current_directory and focused_notebook
 
         Yields:
             Dict containing chunks of the agent's response
@@ -195,8 +248,11 @@ class AgentWrapper:
             return
 
         try:
+            # Append context to message
+            message_with_context = self._append_context_to_message(message, context)
+
             # Prepare the input for the agent
-            agent_input = {"messages": [{"role": "user", "content": message}]}
+            agent_input = {"messages": [{"role": "user", "content": message_with_context}]}
 
             # Prepare config with thread_id if provided
             agent_config = config or {}

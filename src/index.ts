@@ -4,6 +4,7 @@ import {
 } from '@jupyterlab/application';
 import { ICommandPalette } from '@jupyterlab/apputils';
 import { LabIcon } from '@jupyterlab/ui-components';
+import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { ChatWidget } from './widget';
 
 // Create a custom chat icon
@@ -26,10 +27,11 @@ const plugin: JupyterFrontEndPlugin<void> = {
   id: 'jupyter-deepagents:plugin',
   description: 'A JupyterLab extension for DeepAgents chat interface',
   autoStart: true,
-  optional: [ICommandPalette],
+  optional: [ICommandPalette, IFileBrowserFactory],
   activate: (
     app: JupyterFrontEnd,
-    palette: ICommandPalette | null
+    palette: ICommandPalette | null,
+    browserFactory: IFileBrowserFactory | null
   ) => {
     console.log('JupyterLab extension jupyter-deepagents is activated!');
 
@@ -42,7 +44,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
       icon: chatIcon,
       execute: () => {
         if (!widget || widget.isDisposed) {
-          widget = new ChatWidget();
+          widget = new ChatWidget(app.shell, browserFactory);
           widget.id = 'deepagents-chat';
           widget.title.label = 'Deep Agents';
           widget.title.icon = chatIcon;
