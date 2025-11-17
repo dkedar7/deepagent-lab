@@ -35,26 +35,25 @@ const plugin: JupyterFrontEndPlugin<void> = {
   ) => {
     console.log('JupyterLab extension jupyter-deepagents is activated!');
 
-    let widget: ChatWidget | null = null;
+    // Create widget immediately on startup
+    const widget = new ChatWidget(app.shell, browserFactory);
+    widget.id = 'deepagents-chat';
+    widget.title.label = 'Deep Agents';
+    widget.title.icon = chatIcon;
+    widget.title.closable = true;
 
-    // Add command to open chat
+    // Add to right sidebar automatically
+    app.shell.add(widget, 'right', { rank: 500 });
+
+    // Add command to open chat (useful if user closes the widget)
     app.commands.addCommand(CommandIDs.openChat, {
       label: 'Deep Agents',
       caption: 'Open DeepAgents chat interface',
       icon: chatIcon,
       execute: () => {
-        if (!widget || widget.isDisposed) {
-          widget = new ChatWidget(app.shell, browserFactory);
-          widget.id = 'deepagents-chat';
-          widget.title.label = 'Deep Agents';
-          widget.title.icon = chatIcon;
-          widget.title.closable = true;
-        }
-
         if (!widget.isAttached) {
           app.shell.add(widget, 'right', { rank: 500 });
         }
-
         app.shell.activateById(widget.id);
       }
     });
