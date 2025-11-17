@@ -406,7 +406,11 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) 
                     ))}
                   </div>
                 )}
-                {message.content}
+                {message.role === 'assistant' ? (
+                  <ReactMarkdown>{message.content}</ReactMarkdown>
+                ) : (
+                  message.content
+                )}
               </div>
             </div>
           ))
