@@ -167,8 +167,70 @@
 }
 
 .deepagents-message-content {
-  line-height: 1.5;
+  line-height: 1.2;
   white-space: pre-wrap;
+}
+
+/* Reduce spacing in markdown-rendered content */
+.deepagents-message-assistant .deepagents-message-content p {
+  margin: 0.05em 0;
+}
+
+.deepagents-message-assistant .deepagents-message-content p:first-child {
+  margin-top: 0;
+}
+
+.deepagents-message-assistant .deepagents-message-content p:last-child {
+  margin-bottom: 0;
+}
+
+.deepagents-message-assistant .deepagents-message-content h1,
+.deepagents-message-assistant .deepagents-message-content h2,
+.deepagents-message-assistant .deepagents-message-content h3,
+.deepagents-message-assistant .deepagents-message-content h4,
+.deepagents-message-assistant .deepagents-message-content h5,
+.deepagents-message-assistant .deepagents-message-content h6 {
+  margin: 0.2em 0 0.05em 0;
+}
+
+.deepagents-message-assistant .deepagents-message-content h1:first-child,
+.deepagents-message-assistant .deepagents-message-content h2:first-child,
+.deepagents-message-assistant .deepagents-message-content h3:first-child,
+.deepagents-message-assistant .deepagents-message-content h4:first-child,
+.deepagents-message-assistant .deepagents-message-content h5:first-child,
+.deepagents-message-assistant .deepagents-message-content h6:first-child {
+  margin-top: 0;
+}
+
+.deepagents-message-assistant .deepagents-message-content ul,
+.deepagents-message-assistant .deepagents-message-content ol {
+  margin: 0.05em 0;
+  padding-left: 1.5em;
+}
+
+.deepagents-message-assistant .deepagents-message-content li {
+  margin: 0.05em 0;
+}
+
+.deepagents-message-assistant .deepagents-message-content code {
+  background: var(--jp-layout-color2);
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+  font-family: var(--jp-code-font-family);
+  font-size: 0.9em;
+}
+
+.deepagents-message-assistant .deepagents-message-content pre {
+  margin: 0.5em 0;
+  padding: 0.8em;
+  background: var(--jp-layout-color2);
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.deepagents-message-assistant .deepagents-message-content pre code {
+  background: none;
+  padding: 0;
 }
 
 /* Intermediate messages styling */
@@ -320,25 +382,36 @@
 }
 
 .deepagents-send-button {
-  padding: 10px 20px;
-  background: var(--jp-brand-color1);
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: #333;
   color: white;
   border: none;
-  border-radius: 6px;
-  font-weight: 600;
+  border-radius: 50%;
+  font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, transform 0.1s;
   font-family: var(--jp-ui-font-family);
-  font-size: 14px;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .deepagents-send-button:hover:not(:disabled) {
-  background: var(--jp-brand-color0);
+  background: #000;
+  transform: scale(1.05);
+}
+
+.deepagents-send-button:active:not(:disabled) {
+  transform: scale(0.95);
 }
 
 .deepagents-send-button:disabled {
-  opacity: 0.5;
+  opacity: 0.3;
   cursor: not-allowed;
+  background: #999;
 }
 
 /* Scrollbar styling */
@@ -362,143 +435,61 @@
 /* Interrupt UI */
 .deepagents-interrupt {
   margin: 12px 0;
-  padding: 16px;
-  background: var(--jp-warn-color3);
-  border: 2px solid var(--jp-warn-color1);
-  border-radius: 8px;
+  padding: 12px;
+  background: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 0;
 }
 
 .deepagents-interrupt-header {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--jp-warn-color0);
+  color: #333;
   margin-bottom: 8px;
 }
 
 .deepagents-interrupt-description {
-  font-size: 13px;
-  margin: 8px 0;
-  color: var(--jp-ui-font-color1);
-}
-
-.deepagents-action-request {
-  margin: 12px 0;
-  padding: 12px;
-  background: var(--jp-layout-color1);
-  border: 1px solid var(--jp-border-color2);
-  border-radius: 6px;
-}
-
-.deepagents-action-tool {
-  font-size: 13px;
-  margin-bottom: 8px;
-  color: var(--jp-ui-font-color1);
-}
-
-.deepagents-action-tool strong {
-  color: var(--jp-brand-color1);
-}
-
-.deepagents-action-args {
-  margin: 8px 0;
-  font-size: 11px;
-}
-
-.deepagents-action-args summary {
-  cursor: pointer;
-  color: var(--jp-ui-font-color2);
-  padding: 4px 0;
-}
-
-.deepagents-action-args pre {
-  margin: 8px 0;
-  padding: 8px;
-  background: var(--jp-layout-color0);
-  border: 1px solid var(--jp-border-color2);
-  border-radius: 4px;
-  overflow-x: auto;
-  font-family: var(--jp-code-font-family);
-  font-size: 10px;
+  font-size: 12px;
+  margin: 8px 0 12px 0;
+  color: #666;
 }
 
 .deepagents-action-decisions {
   display: flex;
   gap: 8px;
-  margin: 12px 0;
+  margin: 0;
 }
 
 .deepagents-decision-btn {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
+  padding: 6px 16px;
+  border: 1px solid #999;
+  border-radius: 0;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 400;
   cursor: pointer;
-  transition: opacity 0.2s;
+  background: #fff;
+  color: #333;
+  transition: background-color 0.2s, border-color 0.2s;
 }
 
 .deepagents-decision-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-.deepagents-approve-btn {
-  background: var(--jp-success-color1);
-  color: white;
+.deepagents-decision-btn:hover:not(:disabled) {
+  background: #f0f0f0;
+  border-color: #666;
 }
 
 .deepagents-approve-btn:hover:not(:disabled) {
-  background: var(--jp-success-color0);
-}
-
-.deepagents-reject-btn {
-  background: var(--jp-error-color1);
-  color: white;
+  background: #e8e8e8;
 }
 
 .deepagents-reject-btn:hover:not(:disabled) {
-  background: var(--jp-error-color0);
-}
-
-.deepagents-edit-btn {
-  background: var(--jp-warn-color1);
-  color: white;
+  background: #e8e8e8;
 }
 
 .deepagents-edit-btn:hover:not(:disabled) {
-  background: var(--jp-warn-color0);
-}
-
-.deepagents-current-decision {
-  font-size: 11px;
-  color: var(--jp-ui-font-color2);
-  margin-top: 8px;
-}
-
-.deepagents-current-decision strong {
-  color: var(--jp-brand-color1);
-  text-transform: capitalize;
-}
-
-.deepagents-submit-decisions-btn {
-  width: 100%;
-  margin-top: 12px;
-  padding: 10px;
-  background: var(--jp-brand-color1);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.deepagents-submit-decisions-btn:hover:not(:disabled) {
-  background: var(--jp-brand-color0);
-}
-
-.deepagents-submit-decisions-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  background: #e8e8e8;
 }

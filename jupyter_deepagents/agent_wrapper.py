@@ -428,7 +428,6 @@ class AgentWrapper:
                 # Check for interrupts (human-in-the-loop)
                 if isinstance(update, dict) and "__interrupt__" in update:
                     interrupt_value = update["__interrupt__"]
-                    print(f"DEBUG: Interrupt detected. Type: {type(interrupt_value)}, Value: {interrupt_value}")
 
                     # Handle different formats
                     if isinstance(interrupt_value, tuple):
@@ -438,25 +437,20 @@ class AgentWrapper:
                             if hasattr(interrupt_obj, 'value') and isinstance(interrupt_obj.value, dict):
                                 action_requests = interrupt_obj.value.get('action_requests', [])
                                 review_configs = interrupt_obj.value.get('review_configs', [])
-                                print(f"DEBUG: 1-tuple format with Interrupt object - Actions: {len(action_requests)}, Configs: {len(review_configs)}")
                             else:
                                 action_requests = getattr(interrupt_obj, 'action_requests', [])
                                 review_configs = getattr(interrupt_obj, 'review_configs', [])
-                                print(f"DEBUG: 1-tuple format - Actions: {len(action_requests)}, Configs: {len(review_configs)}")
                         elif len(interrupt_value) == 2:
                             # Two-element tuple: (action_requests, review_configs)
                             action_requests, review_configs = interrupt_value
-                            print(f"DEBUG: 2-tuple format - Actions: {len(action_requests)}, Configs: {len(review_configs)}")
                         else:
                             # Unknown tuple format
                             action_requests = []
                             review_configs = []
-                            print(f"DEBUG: Unknown tuple format with {len(interrupt_value)} elements")
                     else:
                         # Handle object format
                         action_requests = getattr(interrupt_value, 'action_requests', [])
                         review_configs = getattr(interrupt_value, 'review_configs', [])
-                        print(f"DEBUG: Object format - Actions: {len(action_requests)}, Configs: {len(review_configs)}")
 
                     # Convert to dict for JSON serialization
                     interrupt_data = {
@@ -466,7 +460,6 @@ class AgentWrapper:
 
                     # Extract action requests
                     for i, action in enumerate(action_requests):
-                        print(f"DEBUG: Processing action {i}: {type(action)}, {action}")
                         # Handle both dict and object formats, and both 'name' and 'tool' field names
                         if isinstance(action, dict):
                             tool_name = action.get('tool') or action.get('name')
@@ -485,19 +478,14 @@ class AgentWrapper:
                             "args": args,
                             "description": description
                         }
-                        print(f"DEBUG: Action dict: {action_dict}")
                         interrupt_data["action_requests"].append(action_dict)
 
                     # Extract review configs
                     for i, config in enumerate(review_configs):
-                        print(f"DEBUG: Processing config {i}: {type(config)}, {config}")
                         config_dict = {
                             "allowed_decisions": getattr(config, 'allowed_decisions', config.get('allowed_decisions') if isinstance(config, dict) else [])
                         }
-                        print(f"DEBUG: Config dict: {config_dict}")
                         interrupt_data["review_configs"].append(config_dict)
-
-                    print(f"DEBUG: Final interrupt_data: {interrupt_data}")
                     yield {
                         "interrupt": interrupt_data,
                         "status": "interrupt"
