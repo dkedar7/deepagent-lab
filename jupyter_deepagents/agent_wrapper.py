@@ -222,6 +222,169 @@ class AgentWrapper:
                 "status": "error"
             }
 
+    def resume_from_interrupt(self, decisions: list, config: Optional[Dict[str, Any]] = None, thread_id: Optional[str] = None) -> Iterator[Dict[str, Any]]:
+        """
+        Resume execution after a human-in-the-loop interrupt.
+
+        Args:
+            decisions: List of decision objects with 'type' and optional fields
+            config: Optional configuration for the agent
+            thread_id: Thread ID to resume
+
+        Yields:
+            Dict containing chunks of the agent's response
+        """
+        if self.agent is None:
+            yield {
+                "error": "Agent not loaded",
+                "status": "error"
+            }
+            return
+
+        try:
+            from langgraph.types import Command
+
+            # Prepare config with thread_id
+            agent_config = config or {}
+            if thread_id:
+                agent_config["configurable"] = agent_config.get("configurable", {})
+                agent_config["configurable"]["thread_id"] = thread_id
+
+            # Create resume command
+            resume_input = Command(resume={"decisions": decisions})
+
+            # Stream from the agent after resuming
+            for update in self.agent.stream(resume_input, config=agent_config, stream_mode="updates"):
+                # Check for interrupts again
+                if isinstance(update, dict) and "__interrupt__" in update:
+                    interrupt_value = update["__interrupt__"]
+
+                    # Handle different formats (same as in stream method)
+                    if isinstance(interrupt_value, tuple):
+                        if len(interrupt_value) == 1:
+                            # Single-element tuple containing Interrupt object
+                            interrupt_obj = interrupt_value[0]
+                            if hasattr(interrupt_obj, 'value') and isinstance(interrupt_obj.value, dict):
+                                action_requests = interrupt_obj.value.get('action_requests', [])
+                                review_configs = interrupt_obj.value.get('review_configs', [])
+                            else:
+                                action_requests = getattr(interrupt_obj, 'action_requests', [])
+                                review_configs = getattr(interrupt_obj, 'review_configs', [])
+                        elif len(interrupt_value) == 2:
+                            # Two-element tuple: (action_requests, review_configs)
+                            action_requests, review_configs = interrupt_value
+                        else:
+                            action_requests = []
+                            review_configs = []
+                    else:
+                        # Handle object format
+                        action_requests = getattr(interrupt_value, 'action_requests', [])
+                        review_configs = getattr(interrupt_value, 'review_configs', [])
+
+                    # Convert to dict for JSON serialization
+                    interrupt_data = {
+                        "action_requests": [],
+                        "review_configs": []
+                    }
+
+                    # Extract action requests
+                    for i, action in enumerate(action_requests):
+                        # Handle both dict and object formats, and both 'name' and 'tool' field names
+                        if isinstance(action, dict):
+                            tool_name = action.get('tool') or action.get('name')
+                            tool_call_id = action.get('tool_call_id', f"call_{i}")
+                            args = action.get('args', {})
+                            description = action.get('description')
+                        else:
+                            tool_name = getattr(action, 'tool', None) or getattr(action, 'name', None)
+                            tool_call_id = getattr(action, 'tool_call_id', f"call_{i}")
+                            args = getattr(action, 'args', {})
+                            description = getattr(action, 'description', None)
+
+                        interrupt_data["action_requests"].append({
+                            "tool": tool_name,
+                            "tool_call_id": tool_call_id,
+                            "args": args,
+                            "description": description
+                        })
+
+                    # Extract review configs
+                    for config in review_configs:
+                        interrupt_data["review_configs"].append({
+                            "allowed_decisions": getattr(config, 'allowed_decisions', config.get('allowed_decisions') if isinstance(config, dict) else [])
+                        })
+
+                    yield {
+                        "interrupt": interrupt_data,
+                        "status": "interrupt"
+                    }
+                    continue
+
+                # Regular update processing (same as stream method)
+                if isinstance(update, dict):
+                    for node_name, state_data in update.items():
+                        if isinstance(state_data, dict) and "messages" in state_data:
+                            messages = state_data["messages"]
+                            if messages:
+                                last_message = messages[-1] if isinstance(messages, list) else messages
+                                message_type = last_message.__class__.__name__ if hasattr(last_message, '__class__') else None
+
+                                if message_type == 'ToolMessage':
+                                    pass
+                                elif hasattr(last_message, 'content'):
+                                    content = last_message.content
+                                    if isinstance(content, str):
+                                        content_str = content
+                                    elif isinstance(content, list):
+                                        content_str = " ".join(
+                                            block.get("text", str(block)) if isinstance(block, dict) else str(block)
+                                            for block in content
+                                        )
+                                    else:
+                                        content_str = str(content)
+
+                                    tool_calls = None
+                                    if hasattr(last_message, 'tool_calls') and last_message.tool_calls:
+                                        tool_calls = []
+                                        for tc in last_message.tool_calls:
+                                            tool_calls.append({
+                                                "id": tc.get("id") if isinstance(tc, dict) else getattr(tc, 'id', None),
+                                                "name": tc.get("name") if isinstance(tc, dict) else getattr(tc, 'name', None),
+                                                "args": tc.get("args") if isinstance(tc, dict) else getattr(tc, 'args', {})
+                                            })
+
+                                    content_str = content_str.strip() if content_str else ""
+
+                                    if content_str and tool_calls:
+                                        import re
+                                        tool_dict_pattern = r"\{'id':\s*'[^']+',\s*'input':\s*\{.*?\},\s*'name':\s*'[^']+',\s*'type':\s*'tool_use'\}"
+                                        content_str = re.sub(tool_dict_pattern, '', content_str, flags=re.DOTALL)
+                                        content_str = content_str.strip()
+
+                                    if tool_calls:
+                                        yield {
+                                            "tool_calls": tool_calls,
+                                            "node": node_name,
+                                            "status": "streaming"
+                                        }
+
+                                    if content_str:
+                                        yield {
+                                            "chunk": content_str,
+                                            "node": node_name,
+                                            "status": "streaming"
+                                        }
+
+            yield {
+                "status": "complete"
+            }
+
+        except Exception as e:
+            yield {
+                "error": f"Error resuming from interrupt: {str(e)}",
+                "status": "error"
+            }
+
     def stream(self, message: str, config: Optional[Dict[str, Any]] = None, thread_id: Optional[str] = None, context: Optional[Dict[str, Any]] = None) -> Iterator[Dict[str, Any]]:
         """
         Stream responses from the agent.
@@ -262,6 +425,86 @@ class AgentWrapper:
 
             # Stream from the agent using "updates" mode to get intermediate steps
             for update in self.agent.stream(agent_input, config=agent_config, stream_mode="updates"):
+                # Check for interrupts (human-in-the-loop)
+                if isinstance(update, dict) and "__interrupt__" in update:
+                    interrupt_value = update["__interrupt__"]
+                    print(f"DEBUG: Interrupt detected. Type: {type(interrupt_value)}, Value: {interrupt_value}")
+
+                    # Handle different formats
+                    if isinstance(interrupt_value, tuple):
+                        if len(interrupt_value) == 1:
+                            # Single-element tuple containing Interrupt object
+                            interrupt_obj = interrupt_value[0]
+                            if hasattr(interrupt_obj, 'value') and isinstance(interrupt_obj.value, dict):
+                                action_requests = interrupt_obj.value.get('action_requests', [])
+                                review_configs = interrupt_obj.value.get('review_configs', [])
+                                print(f"DEBUG: 1-tuple format with Interrupt object - Actions: {len(action_requests)}, Configs: {len(review_configs)}")
+                            else:
+                                action_requests = getattr(interrupt_obj, 'action_requests', [])
+                                review_configs = getattr(interrupt_obj, 'review_configs', [])
+                                print(f"DEBUG: 1-tuple format - Actions: {len(action_requests)}, Configs: {len(review_configs)}")
+                        elif len(interrupt_value) == 2:
+                            # Two-element tuple: (action_requests, review_configs)
+                            action_requests, review_configs = interrupt_value
+                            print(f"DEBUG: 2-tuple format - Actions: {len(action_requests)}, Configs: {len(review_configs)}")
+                        else:
+                            # Unknown tuple format
+                            action_requests = []
+                            review_configs = []
+                            print(f"DEBUG: Unknown tuple format with {len(interrupt_value)} elements")
+                    else:
+                        # Handle object format
+                        action_requests = getattr(interrupt_value, 'action_requests', [])
+                        review_configs = getattr(interrupt_value, 'review_configs', [])
+                        print(f"DEBUG: Object format - Actions: {len(action_requests)}, Configs: {len(review_configs)}")
+
+                    # Convert to dict for JSON serialization
+                    interrupt_data = {
+                        "action_requests": [],
+                        "review_configs": []
+                    }
+
+                    # Extract action requests
+                    for i, action in enumerate(action_requests):
+                        print(f"DEBUG: Processing action {i}: {type(action)}, {action}")
+                        # Handle both dict and object formats, and both 'name' and 'tool' field names
+                        if isinstance(action, dict):
+                            tool_name = action.get('tool') or action.get('name')
+                            tool_call_id = action.get('tool_call_id', f"call_{i}")
+                            args = action.get('args', {})
+                            description = action.get('description')
+                        else:
+                            tool_name = getattr(action, 'tool', None) or getattr(action, 'name', None)
+                            tool_call_id = getattr(action, 'tool_call_id', f"call_{i}")
+                            args = getattr(action, 'args', {})
+                            description = getattr(action, 'description', None)
+
+                        action_dict = {
+                            "tool": tool_name,
+                            "tool_call_id": tool_call_id,
+                            "args": args,
+                            "description": description
+                        }
+                        print(f"DEBUG: Action dict: {action_dict}")
+                        interrupt_data["action_requests"].append(action_dict)
+
+                    # Extract review configs
+                    for i, config in enumerate(review_configs):
+                        print(f"DEBUG: Processing config {i}: {type(config)}, {config}")
+                        config_dict = {
+                            "allowed_decisions": getattr(config, 'allowed_decisions', config.get('allowed_decisions') if isinstance(config, dict) else [])
+                        }
+                        print(f"DEBUG: Config dict: {config_dict}")
+                        interrupt_data["review_configs"].append(config_dict)
+
+                    print(f"DEBUG: Final interrupt_data: {interrupt_data}")
+                    yield {
+                        "interrupt": interrupt_data,
+                        "status": "interrupt"
+                    }
+                    continue
+
+                # Regular update processing
                 # update is a dict like {node_name: state_data}
                 if isinstance(update, dict):
                     for node_name, state_data in update.items():

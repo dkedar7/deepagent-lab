@@ -358,3 +358,147 @@
 .deepagents-chat-messages::-webkit-scrollbar-thumb:hover {
   background: var(--jp-border-color1);
 }
+
+/* Interrupt UI */
+.deepagents-interrupt {
+  margin: 12px 0;
+  padding: 16px;
+  background: var(--jp-warn-color3);
+  border: 2px solid var(--jp-warn-color1);
+  border-radius: 8px;
+}
+
+.deepagents-interrupt-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--jp-warn-color0);
+  margin-bottom: 8px;
+}
+
+.deepagents-interrupt-description {
+  font-size: 13px;
+  margin: 8px 0;
+  color: var(--jp-ui-font-color1);
+}
+
+.deepagents-action-request {
+  margin: 12px 0;
+  padding: 12px;
+  background: var(--jp-layout-color1);
+  border: 1px solid var(--jp-border-color2);
+  border-radius: 6px;
+}
+
+.deepagents-action-tool {
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: var(--jp-ui-font-color1);
+}
+
+.deepagents-action-tool strong {
+  color: var(--jp-brand-color1);
+}
+
+.deepagents-action-args {
+  margin: 8px 0;
+  font-size: 11px;
+}
+
+.deepagents-action-args summary {
+  cursor: pointer;
+  color: var(--jp-ui-font-color2);
+  padding: 4px 0;
+}
+
+.deepagents-action-args pre {
+  margin: 8px 0;
+  padding: 8px;
+  background: var(--jp-layout-color0);
+  border: 1px solid var(--jp-border-color2);
+  border-radius: 4px;
+  overflow-x: auto;
+  font-family: var(--jp-code-font-family);
+  font-size: 10px;
+}
+
+.deepagents-action-decisions {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.deepagents-decision-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.deepagents-decision-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.deepagents-approve-btn {
+  background: var(--jp-success-color1);
+  color: white;
+}
+
+.deepagents-approve-btn:hover:not(:disabled) {
+  background: var(--jp-success-color0);
+}
+
+.deepagents-reject-btn {
+  background: var(--jp-error-color1);
+  color: white;
+}
+
+.deepagents-reject-btn:hover:not(:disabled) {
+  background: var(--jp-error-color0);
+}
+
+.deepagents-edit-btn {
+  background: var(--jp-warn-color1);
+  color: white;
+}
+
+.deepagents-edit-btn:hover:not(:disabled) {
+  background: var(--jp-warn-color0);
+}
+
+.deepagents-current-decision {
+  font-size: 11px;
+  color: var(--jp-ui-font-color2);
+  margin-top: 8px;
+}
+
+.deepagents-current-decision strong {
+  color: var(--jp-brand-color1);
+  text-transform: capitalize;
+}
+
+.deepagents-submit-decisions-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  background: var(--jp-brand-color1);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.deepagents-submit-decisions-btn:hover:not(:disabled) {
+  background: var(--jp-brand-color0);
+}
+
+.deepagents-submit-decisions-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

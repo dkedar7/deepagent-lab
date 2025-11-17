@@ -95,6 +95,50 @@ class ReloadAgentHandler(APIHandler):
             raise HTTPError(500, str(e))
 
 
+class ResumeHandler(APIHandler):
+    """Handler to resume execution after a human-in-the-loop interrupt."""
+
+    @tornado.web.authenticated
+    async def post(self):
+        """
+        Handle POST requests to resume from an interrupt.
+
+        Expected JSON payload:
+        {
+            "decisions": [{"type": "approve"}, ...],
+            "thread_id": "uuid"
+        }
+        """
+        try:
+            data = self.get_json_body()
+            decisions = data.get("decisions", [])
+            thread_id = data.get("thread_id")
+
+            if not thread_id:
+                raise HTTPError(400, "thread_id is required")
+
+            agent = get_agent()
+
+            # Stream response
+            self.set_header("Content-Type", "text/event-stream")
+            self.set_header("Cache-Control", "no-cache")
+            self.set_header("Connection", "keep-alive")
+
+            for chunk in agent.resume_from_interrupt(decisions, thread_id=thread_id):
+                # Send as server-sent event
+                event_data = f"data: {json.dumps(chunk)}\n\n"
+                self.write(event_data)
+                await self.flush()
+
+            self.finish()
+
+        except HTTPError:
+            raise
+        except Exception as e:
+            self.log.error(f"Error in ResumeHandler: {e}", exc_info=True)
+            raise HTTPError(500, str(e))
+
+
 class HealthHandler(APIHandler):
     """Handler to check if the agent is loaded."""
 
@@ -123,12 +167,14 @@ def setup_handlers(web_app):
     # Define route patterns
     route_pattern_chat = url_path_join(base_url, "jupyter-deepagents", "chat")
     route_pattern_reload = url_path_join(base_url, "jupyter-deepagents", "reload")
+    route_pattern_resume = url_path_join(base_url, "jupyter-deepagents", "resume")
     route_pattern_health = url_path_join(base_url, "jupyter-deepagents", "health")
 
     # Add handlers
     handlers = [
         (route_pattern_chat, ChatHandler),
         (route_pattern_reload, ReloadAgentHandler),
+        (route_pattern_resume, ResumeHandler),
         (route_pattern_health, HealthHandler),
     ]
 

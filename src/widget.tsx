@@ -15,6 +15,40 @@ interface ToolCall {
 }
 
 /**
+ * Action request interface for interrupts
+ */
+interface ActionRequest {
+  tool: string;
+  tool_call_id: string;
+  args: Record<string, any>;
+  description?: string;
+}
+
+/**
+ * Review config interface
+ */
+interface ReviewConfig {
+  allowed_decisions: string[];
+}
+
+/**
+ * Interrupt data interface
+ */
+interface InterruptData {
+  action_requests: ActionRequest[];
+  review_configs: ReviewConfig[];
+}
+
+/**
+ * Decision interface
+ */
+interface Decision {
+  type: 'approve' | 'reject' | 'edit';
+  args?: Record<string, any>;
+  explanation?: string;
+}
+
+/**
  * Message interface for chat messages
  */
 interface Message {
@@ -25,6 +59,7 @@ interface Message {
   error?: boolean;
   intermediates?: string[];
   toolCalls?: ToolCall[];
+  interrupt?: InterruptData;
 }
 
 /**
@@ -44,6 +79,8 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) 
   const [isLoading, setIsLoading] = useState(false);
   const [agentStatus, setAgentStatus] = useState<'unknown' | 'healthy' | 'error'>('unknown');
   const [threadId, setThreadId] = useState<string>(() => crypto.randomUUID());
+  const [pendingDecisions, setPendingDecisions] = useState<Decision[]>([]);
+  const [awaitingDecision, setAwaitingDecision] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -226,6 +263,40 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) 
                     }];
                   }
                 });
+              } else if (data.status === 'interrupt') {
+                console.log('Interrupt received:', data.interrupt);
+                console.log('Action requests:', data.interrupt?.action_requests);
+                console.log('Review configs:', data.interrupt?.review_configs);
+                console.log('Number of action requests:', data.interrupt?.action_requests?.length);
+                // Handle interrupt - show decision UI
+                setAwaitingDecision(true);
+                setMessages(prev => {
+                  const existing = prev.find(m => m.id === assistantMessageId);
+                  if (existing) {
+                    return prev.map(m =>
+                      m.id === assistantMessageId
+                        ? {
+                            ...m,
+                            interrupt: data.interrupt
+                          }
+                        : m
+                    );
+                  } else {
+                    return [...prev, {
+                      id: assistantMessageId,
+                      role: 'assistant' as const,
+                      content: '',
+                      timestamp: new Date(),
+                      interrupt: data.interrupt
+                    }];
+                  }
+                });
+                // Initialize decisions array with approve for all actions
+                const initialDecisions: Decision[] = (data.interrupt?.action_requests || []).map(() => ({
+                  type: 'approve' as const
+                }));
+                console.log('Initial decisions:', initialDecisions);
+                setPendingDecisions(initialDecisions);
               } else if (data.status === 'complete') {
                 console.log('Stream complete. Final content:', finalContent);
                 // Stream complete - keep intermediates visible
@@ -280,6 +351,143 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) 
           return [...prev, errorMessage];
         }
       });
+    } finally {
+      setIsLoading(false);
+      inputRef.current?.focus();
+    }
+  };
+
+  const handleResumeFromInterrupt = async (decisions: Decision[]) => {
+    setAwaitingDecision(false);
+    setIsLoading(true);
+
+    try {
+      const xsrfToken = getXSRFToken();
+      const response = await fetch(
+        `/jupyter-deepagents/resume`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-XSRFToken': xsrfToken
+          },
+          body: JSON.stringify({
+            decisions: decisions,
+            thread_id: threadId
+          })
+        }
+      );
+
+      if (!response.body) {
+        throw new Error('No response body');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      const assistantMessageId = (Date.now() + 1).toString();
+      let intermediateMessages: string[] = [];
+      let finalContent = '';
+      let toolCalls: ToolCall[] = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              console.log('Resume SSE data:', data);
+
+              if (data.status === 'streaming') {
+                if (data.tool_calls) {
+                  data.tool_calls.forEach((tc: ToolCall) => {
+                    toolCalls.push({ ...tc });
+                  });
+                }
+
+                if (data.chunk) {
+                  intermediateMessages.push(data.chunk);
+                  finalContent = data.chunk;
+                }
+
+                setMessages(prev => {
+                  const existing = prev.find(m => m.id === assistantMessageId);
+                  if (existing) {
+                    return prev.map(m =>
+                      m.id === assistantMessageId
+                        ? {
+                            ...m,
+                            content: finalContent,
+                            intermediates: [...intermediateMessages],
+                            toolCalls: toolCalls.length > 0 ? [...toolCalls] : undefined
+                          }
+                        : m
+                    );
+                  } else {
+                    return [...prev, {
+                      id: assistantMessageId,
+                      role: 'assistant' as const,
+                      content: finalContent,
+                      timestamp: new Date(),
+                      intermediates: [...intermediateMessages],
+                      toolCalls: toolCalls.length > 0 ? [...toolCalls] : undefined
+                    }];
+                  }
+                });
+              } else if (data.status === 'interrupt') {
+                // Another interrupt
+                setAwaitingDecision(true);
+                setMessages(prev => {
+                  const existing = prev.find(m => m.id === assistantMessageId);
+                  if (existing) {
+                    return prev.map(m =>
+                      m.id === assistantMessageId
+                        ? {
+                            ...m,
+                            interrupt: data.interrupt
+                          }
+                        : m
+                    );
+                  } else {
+                    return [...prev, {
+                      id: assistantMessageId,
+                      role: 'assistant' as const,
+                      content: '',
+                      timestamp: new Date(),
+                      interrupt: data.interrupt
+                    }];
+                  }
+                });
+                const initialDecisions: Decision[] = data.interrupt.action_requests.map(() => ({
+                  type: 'approve' as const
+                }));
+                setPendingDecisions(initialDecisions);
+              } else if (data.status === 'complete') {
+                console.log('Resume complete');
+              } else if (data.status === 'error') {
+                console.error('Resume error:', data.error);
+                setMessages(prev => [...prev, {
+                  id: assistantMessageId,
+                  role: 'assistant' as const,
+                  content: data.error || 'An error occurred',
+                  timestamp: new Date(),
+                  error: true
+                }]);
+              }
+            } catch (e) {
+              console.error('Error parsing resume SSE data:', e);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error resuming from interrupt:', error);
+      addSystemMessage(`Error: ${error instanceof Error ? error.message : 'Failed to resume'}`);
     } finally {
       setIsLoading(false);
       inputRef.current?.focus();
@@ -404,6 +612,97 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) 
                         </div>
                       </details>
                     ))}
+                  </div>
+                )}
+                {message.interrupt && (
+                  <div className="deepagents-interrupt">
+                    <div className="deepagents-interrupt-header">
+                      🔔 Human approval required
+                    </div>
+                    <p className="deepagents-interrupt-description">
+                      The agent wants to perform the following action{message.interrupt.action_requests.length > 1 ? 's' : ''}:
+                    </p>
+                    {message.interrupt.action_requests.map((action, idx) => (
+                      <div key={idx} className="deepagents-action-request">
+                        <div className="deepagents-action-tool">
+                          <strong>{action.tool}</strong>
+                          {action.description && <span> - {action.description}</span>}
+                        </div>
+                        <details className="deepagents-action-args">
+                          <summary>Arguments</summary>
+                          <pre>{JSON.stringify(action.args, null, 2)}</pre>
+                        </details>
+                        <div className="deepagents-action-decisions">
+                          {message.interrupt?.review_configs[idx]?.allowed_decisions.includes('approve') && (
+                            <button
+                              className="deepagents-decision-btn deepagents-approve-btn"
+                              onClick={() => {
+                                const newDecisions = [...pendingDecisions];
+                                newDecisions[idx] = { type: 'approve' };
+                                setPendingDecisions(newDecisions);
+                              }}
+                              disabled={!awaitingDecision}
+                            >
+                              ✓ Approve
+                            </button>
+                          )}
+                          {message.interrupt?.review_configs[idx]?.allowed_decisions.includes('reject') && (
+                            <button
+                              className="deepagents-decision-btn deepagents-reject-btn"
+                              onClick={() => {
+                                const explanation = prompt('Reason for rejection (optional):');
+                                const newDecisions = [...pendingDecisions];
+                                newDecisions[idx] = {
+                                  type: 'reject',
+                                  explanation: explanation || undefined
+                                };
+                                setPendingDecisions(newDecisions);
+                              }}
+                              disabled={!awaitingDecision}
+                            >
+                              ✗ Reject
+                            </button>
+                          )}
+                          {message.interrupt?.review_configs[idx]?.allowed_decisions.includes('edit') && (
+                            <button
+                              className="deepagents-decision-btn deepagents-edit-btn"
+                              onClick={() => {
+                                const newArgsStr = prompt(
+                                  'Edit arguments (JSON):',
+                                  JSON.stringify(action.args, null, 2)
+                                );
+                                if (newArgsStr) {
+                                  try {
+                                    const newArgs = JSON.parse(newArgsStr);
+                                    const newDecisions = [...pendingDecisions];
+                                    newDecisions[idx] = {
+                                      type: 'edit',
+                                      args: newArgs
+                                    };
+                                    setPendingDecisions(newDecisions);
+                                  } catch (e) {
+                                    alert('Invalid JSON');
+                                  }
+                                }
+                              }}
+                              disabled={!awaitingDecision}
+                            >
+                              ✎ Edit
+                            </button>
+                          )}
+                        </div>
+                        <div className="deepagents-current-decision">
+                          Current: <strong>{pendingDecisions[idx]?.type || 'approve'}</strong>
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      className="deepagents-submit-decisions-btn"
+                      onClick={() => handleResumeFromInterrupt(pendingDecisions)}
+                      disabled={!awaitingDecision || isLoading}
+                    >
+                      Submit Decisions
+                    </button>
                   </div>
                 )}
                 {message.role === 'assistant' ? (
