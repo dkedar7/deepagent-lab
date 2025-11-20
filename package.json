@@ -9,12 +9,12 @@
     "deepagents",
     "ai"
   ],
-  "homepage": "https://github.com/your-org/jupyter-deepagents",
+  "homepage": "https://github.com/dkedar7/jupyter-deepagents",
   "bugs": {
-    "url": "https://github.com/your-org/jupyter-deepagents/issues"
+    "url": "https://github.com/dkedar7/jupyter-deepagents/issues"
   },
   "license": "MIT",
-  "author": "Your Name",
+  "author": "Kedar Dabhadkar",
   "files": [
     "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
     "style/**/*.{css,js,eot,gif,html,jpg,json,png,svg,woff2,ttf}",
@@ -25,7 +25,7 @@
   "style": "style/index.css",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/jupyter-deepagents.git"
+    "url": "https://github.com/dkedar7/jupyter-deepagents.git"
   },
   "scripts": {
     "build": "yarn build:lib && yarn build:labextension:dev",
