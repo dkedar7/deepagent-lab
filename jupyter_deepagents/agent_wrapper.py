@@ -14,7 +14,7 @@ load_dotenv()
 class AgentWrapper:
     """Wrapper class for LangGraph agent."""
 
-    def __init__(self, agent_module_path: str = "my_agent", agent_variable_name: Optional[str] = None):
+    def __init__(self, agent_module_path: str = "jupyter_deepagents.my_agent", agent_variable_name: Optional[str] = None):
         """
         Initialize the agent wrapper.
 
@@ -117,7 +117,7 @@ class AgentWrapper:
 
         Args:
             message: The original user message
-            context: Context dict with current_directory and focused_widget
+            context: Context dict with current_directory, focused_widget, selected_text, and selection_metadata
 
         Returns:
             Message with appended context
@@ -135,6 +135,29 @@ class AgentWrapper:
                 context_parts.append(f"Currently focused file: {focused}")
             else:
                 context_parts.append(f"Currently focused: {focused}")
+        if context.get("selected_text"):
+            selected = context['selected_text']
+            selection_metadata = context.get("selection_metadata", "")
+
+            # Truncate very long selections to avoid token bloat
+            max_length = 2000
+            if len(selected) > max_length:
+                selected = selected[:max_length] + f"\n... (truncated, {len(selected) - max_length} more characters)"
+
+            # Format location information
+            location_info = ""
+            if selection_metadata:
+                if selection_metadata.startswith("cell_"):
+                    cell_idx = selection_metadata.replace("cell_", "")
+                    location_info = f" from cell index {cell_idx}"
+                elif selection_metadata.startswith("line_"):
+                    line_num = selection_metadata.replace("line_", "")
+                    location_info = f" from line {line_num}"
+                elif selection_metadata.startswith("lines_"):
+                    line_range = selection_metadata.replace("lines_", "")
+                    location_info = f" from lines {line_range}"
+
+            context_parts.append(f"User has selected the following text{location_info}:\n```\n{selected}\n```")
 
         if context_parts:
             return f"{message}\n\n" + "\n".join(context_parts)

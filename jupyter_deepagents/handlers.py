@@ -44,6 +44,8 @@ class ChatHandler(APIHandler):
             thread_id = data.get("thread_id")
             current_directory = data.get("current_directory", "")
             focused_widget = data.get("focused_widget", "")
+            selected_text = data.get("selected_text", "")
+            selection_metadata = data.get("selection_metadata", "")
 
             if not message:
                 raise HTTPError(400, "Message is required")
@@ -58,7 +60,9 @@ class ChatHandler(APIHandler):
             # Create context object
             context = {
                 "current_directory": current_directory,
-                "focused_widget": focused_widget
+                "focused_widget": focused_widget,
+                "selected_text": selected_text,
+                "selection_metadata": selection_metadata
             }
 
             # Stream response
