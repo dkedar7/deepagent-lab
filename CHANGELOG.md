@@ -5,6 +5,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2025-11-29
+
+### Added
+- **Centralized Configuration System**: New `config.py` module with `get_config()` function for hierarchical environment variable support
+  - All configuration now uses `DEEPAGENT_` prefix (not `DEEPAGENT_LAB_`)
+  - Full compatibility with [deepagent-dash](https://github.com/dkedar7/deepagent-dash)
+  - Agents can be shared between deepagent-lab and deepagent-dash seamlessly
+
+- **File Path Agent Loading**: Enhanced agent loading to support both module paths and file paths
+  - `DEEPAGENT_AGENT_SPEC` environment variable in format `"module_or_file:variable"`
+  - Support for relative paths (`./my_agent.py:agent`)
+  - Support for absolute paths (`/path/to/agent.py:graph`)
+  - Automatic detection of file vs module paths
+
+- **Dynamic Workspace Configuration**: Workspace root now configurable via `DEEPAGENT_WORKSPACE_ROOT`
+  - Automatic workspace discovery for agents
+  - Environment variable set by extension for agent access
+  - Dynamic workspace path resolution
+
+### Changed
+- **Standardized Environment Variables**: All variables now use `DEEPAGENT_` prefix for cross-library compatibility
+  - `DEEPAGENT_AGENT_SPEC` replaces previous agent configuration
+  - `DEEPAGENT_JUPYTER_SERVER_URL` for Jupyter server connection
+  - `DEEPAGENT_JUPYTER_TOKEN` for authentication
+  - `DEEPAGENT_MODEL_NAME` and `DEEPAGENT_MODEL_TEMPERATURE` for model configuration
+  - `DEEPAGENT_VIRTUAL_MODE` for FilesystemBackend safety
+  - `DEEPAGENT_WORKSPACE_ROOT` for dynamic workspace paths
+
+- **Enhanced Security**: Updated default Jupyter token from `"12345"` to cryptographically secure random value
+  - `.env.example` includes command to generate secure tokens: `python3 -c "import secrets; print(secrets.token_hex(16))"`
+  - Default token: `8e2121e58cd3f9e13fc05fc020955c6e`
+
+- **Streamlined Documentation**: Updated README.md with clearer, more concise instructions
+  - Emphasized critical Jupyter server configuration requirements
+  - Added environment variables reference table
+  - Highlighted agent portability between deepagent-lab and deepagent-dash
+  - Removed verbose sections to focus on essential information
+
+- **Agent Initialization**: Updated `agent_wrapper.py` with improved loading mechanisms
+  - Smart detection of file paths vs module paths
+  - Support for `importlib.util` for file-based loading
+  - Workspace root environment variable propagation
+
+### Removed
+- **Unused Environment Variables**: Removed `MODEL_MAX_TOKENS` and `LOG_LEVEL` (were defined but never used)
+
+### Fixed
+- **Jupyter Configuration**: Corrected Quick Start documentation to use hardcoded values matching `.env.example`
+  - Fixed incorrect reference to non-existent `DEEPAGENT_JUPYTER_PORT` variable
+  - Updated jupyter lab command with correct port and token values
+
 ## [0.1.1] - 2025-11-19
 
 ### Added

@@ -217,3 +217,4 @@ tsconfig.tsbuildinfo
 *.bundled.js
 deepagent_lab/labextension
 .yarn/
+release.sh
