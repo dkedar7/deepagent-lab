@@ -6,7 +6,7 @@ include install.json
 include ts*.json
 include yarn.lock
 
-graft jupyter_deepagents/labextension
+graft deepagent_lab/labextension
 
 # Javascript files
 graft src

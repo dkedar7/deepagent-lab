@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
+import { NotebookPanel } from '@jupyterlab/notebook';
 import { requestAPI } from './handler';
 import ReactMarkdown from 'react-markdown';
 
@@ -118,7 +119,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) 
         addSystemMessage('Agent is ready and connected');
       } else {
         setAgentStatus('error');
-        addSystemMessage('Agent not loaded. Please ensure my_agent.py is configured correctly.');
+        addSystemMessage('Agent not loaded. Please ensure agent.py is configured correctly.');
       }
     } catch (error) {
       console.error('Error checking agent health:', error);
@@ -186,9 +187,74 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) 
       }
     }
 
+    // Get text selection from notebook or editor
+    let selectedText = '';
+    let selectionMetadata = '';
+    if (shell && shell.currentWidget) {
+      const current = shell.currentWidget;
+
+      // Check if it's a notebook
+      if (current instanceof NotebookPanel) {
+        const notebook = current.content;
+        const activeCell = notebook.activeCell;
+
+        if (activeCell && activeCell.editor) {
+          const editor = activeCell.editor;
+          const selection = editor.getSelection();
+
+          if (selection.start.line !== selection.end.line ||
+              selection.start.column !== selection.end.column) {
+            selectedText = editor.model.sharedModel.getSource().substring(
+              editor.getOffsetAt(selection.start),
+              editor.getOffsetAt(selection.end)
+            );
+
+            // Get cell index
+            const cells = notebook.model?.cells;
+            let cellIndex = -1;
+            if (cells) {
+              for (let i = 0; i < cells.length; i++) {
+                if (cells.get(i) === activeCell.model) {
+                  cellIndex = i;
+                  break;
+                }
+              }
+            }
+
+            if (cellIndex >= 0) {
+              selectionMetadata = `cell_${cellIndex}`;
+            }
+          }
+        }
+      }
+      // Check if it's a file editor (text, python, etc.)
+      else if ((current as any).content?.editor) {
+        const editor = (current as any).content.editor;
+        const selection = editor.getSelection();
+
+        if (selection.start.line !== selection.end.line ||
+            selection.start.column !== selection.end.column) {
+          selectedText = editor.model.sharedModel.getSource().substring(
+            editor.getOffsetAt(selection.start),
+            editor.getOffsetAt(selection.end)
+          );
+
+          // Get line numbers (1-indexed for user display)
+          const startLine = selection.start.line + 1;
+          const endLine = selection.end.line + 1;
+          if (startLine === endLine) {
+            selectionMetadata = `line_${startLine}`;
+          } else {
+            selectionMetadata = `lines_${startLine}-${endLine}`;
+          }
+        }
+      }
+    }
+
     console.log('Sending message with thread_id:', threadId);
     console.log('Current directory:', currentDirectory);
     console.log('Focused widget:', focusedWidget);
+    console.log('Selected text:', selectedText ? `${selectedText.length} characters at ${selectionMetadata}` : 'none');
 
     // Create a placeholder for intermediate updates
     const assistantMessageId = (Date.now() + 1).toString();
@@ -200,7 +266,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) 
     try {
       const xsrfToken = getXSRFToken();
       const response = await fetch(
-        `/jupyter-deepagents/chat`,
+        `/deepagent-lab/chat`,
         {
           method: 'POST',
           headers: {
@@ -212,7 +278,9 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) 
             stream: true,
             thread_id: threadId,
             current_directory: currentDirectory,
-            focused_widget: focusedWidget
+            focused_widget: focusedWidget,
+            selected_text: selectedText,
+            selection_metadata: selectionMetadata
           })
         }
       );
@@ -379,7 +447,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) 
     try {
       const xsrfToken = getXSRFToken();
       const response = await fetch(
-        `/jupyter-deepagents/resume`,
+        `/deepagent-lab/resume`,
         {
           method: 'POST',
           headers: {

@@ -1,154 +1,138 @@
-# jupyter-deepagents
+# deepagent-lab
 
-A JupyterLab extension that provides an elegant chat interface for AI agents with human-in-the-loop capabilities.
+A JupyterLab extension providing an AI agent chat interface with notebook manipulation capabilities and human-in-the-loop controls.
 
 ## Features
 
-### Core Functionality
-- **Chat Interface**: Clean, accessible sidebar interface for natural conversations with your agent
-- **Streaming Responses**: Real-time streaming of agent responses for immediate feedback
-- **Thread-based History**: Maintains conversation context across messages with persistent thread IDs
-- **Context Awareness**: Automatically sends current directory and focused widget information to the agent
-
-### Human-in-the-Loop
-- **Tool Call Approvals**: Review and approve/reject/edit tool calls before execution
-- **Minimal Design**: Simple gray UI with one-click approval buttons
-- **Flexible Decisions**: Approve, reject, or edit tool arguments inline
-- **No Interruptions**: Streamlined workflow without unnecessary prompts
-
-### Developer Experience
-- **Tool Call Visibility**: Expandable sections showing tool names and arguments
-- **Markdown Rendering**: Compact, elegant formatting for agent responses
-- **Agent Health Status**: Visual indicator showing agent connection status
-- **Hot Reload**: Reload agent configuration without restarting JupyterLab
-- **Clear Chat**: Start fresh conversations with a single click
-
-## Requirements
-
-- JupyterLab >= 4.0.0
-- Python >= 3.8
+- **Chat Interface**: Sidebar for natural conversations with your agent
+- **Notebook Manipulation**: Built-in tools for creating, editing, and executing Jupyter notebooks
+- **Human-in-the-Loop**: Review and approve agent actions before execution
+- **Context Awareness**: Automatically sends workspace and file context to your agent
+- **Agent Portability**: Use any other langgraph-compatible agent seamlessly
 
 ## Installation
 
 ```bash
-pip install jupyter-deepagents
+pip install deepagent-lab
 ```
 
-## Usage
+## Quick Start
 
-### Quick Start
-
-1. **Create your agent** in `my_agent.py`:
-
-```python
-from deepagents import create_deep_agent
-from langgraph.checkpoint.memory import MemorySaver
-
-# Create agent with interrupt capability
-agent = create_deep_agent(
-    backend=FilesystemBackend(root_dir=".", virtual_mode=True),
-    middleware=[
-        HumanInTheLoopMiddleware(
-            interrupt_on={
-                "write_file": {"allowed_decisions": ["approve", "reject"]}
-            },
-            description_prefix="Tool execution pending approval",
-        ),
-    ],
-    checkpointer=MemorySaver()
-)
-```
-
-2. **Start JupyterLab**:
+1. **Set up your environment** (copy `.env.example` to `.env` and configure):
 
 ```bash
-jupyter lab
+# Required: Jupyter server configuration (must match your JupyterLab startup)
+DEEPAGENT_JUPYTER_SERVER_URL=http://localhost:8889
+DEEPAGENT_JUPYTER_TOKEN=8e2121e58cd3f9e13fc05fc020955c6e # Generate with python3 -c "import secrets; print(secrets.token_hex(16))"
+
+# If using the default agent, Anthropic API key is required
+ANTHROPIC_API_KEY=your-api-key-here
+
+# Or if you want to use your agent, specify the location here
+DEEPAGENT_AGENT_SPEC=./my_agent.py:agent
 ```
+
+2. **Start JupyterLab** with matching server URL and token:
+
+```bash
+# Start JupyterLab with values matching your .env file
+jupyter lab --port=8889 --IdentityProvider.token=8e2121e58cd3f9e13fc05fc020955c6e
+```
+
+**Important:** The Jupyter server URL and token in your `.env` file must match the values JupyterLab uses when starting up. This allows the agent to connect to notebook kernels for code execution.
 
 3. **Open the chat interface** by clicking the chat icon in the right sidebar
 
 4. **Start chatting** with your agent!
 
-### Using the Interface
+## Agent Configuration
 
-**Basic Chat:**
-- Type your message in the input field
-- Press Enter or click the send arrow (↑) to send
-- Watch as the agent streams its response in real-time
+The extension uses the **DEEPAGENT_** prefix for all environment variables, enabling full compatibility with [deepagent-dash](https://github.com/dkedar7/deepagent-dash).
 
-**Human-in-the-Loop Approvals:**
+### Quick Configuration
 
-When your agent wants to execute a tool:
-1. An approval UI appears showing the tool name
-2. Click **Approve** to allow execution
-3. Click **Reject** to deny the action
-4. Click **Edit** to modify tool arguments before execution
+**Option 1: Use the default agent**
+- The extension includes a built-in agent for notebook manipulation
+- No configuration needed - just start chatting!
 
-No confirmation dialogs or reason prompts - just one click!
+**Option 2: Use a custom agent**
 
-**Interface Controls:**
-- **⟳ Reload**: Reload your agent without restarting JupyterLab
-- **Clear**: Start a new conversation thread
-- **Status Indicator**:
-  - 🟢 Green: Agent loaded and ready
-  - 🟠 Orange: Agent not found or loading
-  - 🔴 Red: Agent error
+Create a custom agent and point to it using environment variables:
 
-### Agent Configuration
+```bash
+# Agent spec in format "module_or_file:variable"
+DEEPAGENT_AGENT_SPEC=./my_agent.py:agent
+```
 
-#### Option 1: Default Location (Recommended)
+### Environment Variables
 
-Create `my_agent.py` in your working directory with an `agent` variable:
+All configuration uses the `DEEPAGENT_` prefix for compatibility with deepagent-dash:
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `DEEPAGENT_AGENT_SPEC` | Agent location (`path:variable`) | Uses default agent |
+| `DEEPAGENT_WORKSPACE_ROOT` | Working directory for agent | JupyterLab root |
+| `DEEPAGENT_MODEL_NAME` | Model identifier | `anthropic:claude-sonnet-4-20250514` |
+| `DEEPAGENT_MODEL_TEMPERATURE` | Model temperature (0.0-1.0) | `0.0` |
+| `DEEPAGENT_JUPYTER_SERVER_URL` | Jupyter server URL | `http://localhost:8889` |
+| `DEEPAGENT_JUPYTER_TOKEN` | Jupyter auth token | `12345` |
+| `DEEPAGENT_VIRTUAL_MODE` | Safe mode for filesystem | `true` |
+| `DEEPAGENT_DEBUG` | Enable debug logging | `false` |
+
+See [.env.example](.env.example) for complete configuration options.
+
+### Creating Custom Agents
 
 ```python
-from langgraph.prebuilt import create_react_agent
+from deepagents import create_deep_agent
+from deepagents.backends import FilesystemBackend
+from langgraph.checkpoint.memory import MemorySaver
+import os
 
-agent = create_react_agent(
-    model=your_model,
-    tools=your_tools,
-    checkpointer=MemorySaver()
+# Agent discovers workspace automatically
+workspace = os.getenv('DEEPAGENT_WORKSPACE_ROOT', '.')
+
+agent = create_deep_agent(
+    model="anthropic:claude-sonnet-4-20250514",
+    backend=FilesystemBackend(root_dir=workspace, virtual_mode=True),
+    checkpointer=MemorySaver(),
+    tools=[...your_tools...]
 )
 ```
 
-#### Option 2: Custom Location
+Save this as `my_agent.py` and configure:
+```bash
+DEEPAGENT_AGENT_SPEC=./my_agent.py:agent
+```
 
-Set the `JUPYTER_AGENT_PATH` environment variable:
+### Agent Portability
+
+Agents configured for deepagent-lab work seamlessly in [deepagent-dash](https://github.com/dkedar7/deepagent-dash):
 
 ```bash
-export JUPYTER_AGENT_PATH="path.to.module:variable_name"
+# Same .env file works for both!
+DEEPAGENT_AGENT_SPEC=./my_agent.py:agent
+DEEPAGENT_WORKSPACE_ROOT=/path/to/project
+
+# Run in JupyterLab
 jupyter lab
+
+# Or run in Dash
+deepagent-dash run
 ```
 
-**Examples:**
-```bash
-# Agent in custom_agent.py as 'my_graph'
-export JUPYTER_AGENT_PATH="custom_agent:my_graph"
+## Interface Controls
 
-# Agent in package: src/agents/main.py as 'agent'
-export JUPYTER_AGENT_PATH="src.agents.main:agent"
-```
+- **⟳ Reload**: Reload your agent without restarting JupyterLab
+- **Clear**: Start a new conversation thread
+- **Status Indicator**:
+  - 🟢 Green: Agent ready
+  - 🟠 Orange: Agent loading
+  - 🔴 Red: Agent error
 
-Format: `module_path:variable_name`
-- `module_path`: Python import path (e.g., `my_agent` or `package.module`)
-- `variable_name`: Name of the agent variable in the module
+## Development
 
-See [AGENT_CONFIGURATION.md](AGENT_CONFIGURATION.md) for advanced configuration.
-
-
-## UI Design Philosophy
-
-The interface follows a minimal, functional aesthetic:
-
-- **Compact Markdown**: Tight line spacing (1.2) and minimal margins for efficient reading
-- **Minimal Color Scheme**: Gray, black, and white palette without visual clutter
-- **No Rounded Edges**: Clean, professional design
-- **One-Click Actions**: Approval buttons submit immediately without confirmation dialogs
-- **Elegant Send Button**: Circular arrow button (↑) for a modern look
-- **Expandable Tool Calls**: Collapsible sections keep the interface clean
-
-## Contributing
-
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
 
 ## License
 

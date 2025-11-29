@@ -21,10 +21,10 @@ namespace CommandIDs {
 }
 
 /**
- * Initialization data for the jupyter-deepagents extension.
+ * Initialization data for the deepagent-lab extension.
  */
 const plugin: JupyterFrontEndPlugin<void> = {
-  id: 'jupyter-deepagents:plugin',
+  id: 'deepagent-lab:plugin',
   description: 'A JupyterLab extension for DeepAgents chat interface',
   autoStart: true,
   optional: [ICommandPalette, IFileBrowserFactory],
@@ -33,7 +33,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     palette: ICommandPalette | null,
     browserFactory: IFileBrowserFactory | null
   ) => {
-    console.log('JupyterLab extension jupyter-deepagents is activated!');
+    console.log('JupyterLab extension deepagent-lab is activated!');
 
     // Create widget immediately on startup
     const widget = new ChatWidget(app.shell, browserFactory);

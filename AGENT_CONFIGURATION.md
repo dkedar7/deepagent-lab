@@ -4,14 +4,14 @@
 
 The Jupyter DeepAgents extension supports two ways to specify your agent:
 
-1. **Default**: Place `my_agent.py` in your working directory
+1. **Default**: Place `agent.py` in your working directory
 2. **Custom**: Use the `JUPYTER_AGENT_PATH` environment variable
 
-## Method 1: Default Location (my_agent.py)
+## Method 1: Default Location (agent.py)
 
 ### Quick Start
 
-1. Create `my_agent.py` in the directory where you run `jupyter lab`:
+1. Create `agent.py` in the directory where you run `jupyter lab`:
 
 ```python
 from langgraph import StateGraph
@@ -102,7 +102,7 @@ export JUPYTER_AGENT_PATH="my_agent:my_custom_graph"
 jupyter lab
 ```
 
-In `my_agent.py`:
+In `agent.py`:
 ```python
 # Export with custom name
 my_custom_graph = workflow.compile()
@@ -171,7 +171,7 @@ load_dotenv()
 2. If set, parse as `module:variable`
 3. Import the module
 4. Get the specified variable
-5. If not set, fall back to `my_agent.py` with default variable names
+5. If not set, fall back to `agent.py` with default variable names
 
 ### Verification
 
@@ -185,7 +185,7 @@ Loaded agent from custom_agent.my_graph
 
 **Without environment variable:**
 ```
-Loaded agent from my_agent.agent
+Loaded agent from agent.agent
 ```
 
 **Error (module not found):**
@@ -239,7 +239,7 @@ jupyter lab
 
 **Check variable name:**
 ```bash
-python -c "from my_agent import agent; print(type(agent))"
+python -c "from agent import agent; print(type(agent))"
 ```
 
 **Common mistakes:**
@@ -363,4 +363,4 @@ jupyter lab --port=8889
 
 - [README.md](README.md) - Main documentation
 - [USAGE.md](USAGE.md) - Usage guide
-- [my_agent.py](my_agent.py) - Example agent template
+- [agent.py](agent.py) - Example agent template

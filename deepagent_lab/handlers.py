@@ -44,6 +44,8 @@ class ChatHandler(APIHandler):
             thread_id = data.get("thread_id")
             current_directory = data.get("current_directory", "")
             focused_widget = data.get("focused_widget", "")
+            selected_text = data.get("selected_text", "")
+            selection_metadata = data.get("selection_metadata", "")
 
             if not message:
                 raise HTTPError(400, "Message is required")
@@ -58,7 +60,9 @@ class ChatHandler(APIHandler):
             # Create context object
             context = {
                 "current_directory": current_directory,
-                "focused_widget": focused_widget
+                "focused_widget": focused_widget,
+                "selected_text": selected_text,
+                "selection_metadata": selection_metadata
             }
 
             # Stream response
@@ -311,11 +315,11 @@ def setup_handlers(web_app):
     base_url = web_app.settings["base_url"]
 
     # Define route patterns
-    route_pattern_chat = url_path_join(base_url, "jupyter-deepagents", "chat")
-    route_pattern_reload = url_path_join(base_url, "jupyter-deepagents", "reload")
-    route_pattern_resume = url_path_join(base_url, "jupyter-deepagents", "resume")
-    route_pattern_health = url_path_join(base_url, "jupyter-deepagents", "health")
-    route_pattern_cancel = url_path_join(base_url, "jupyter-deepagents", "cancel")
+    route_pattern_chat = url_path_join(base_url, "deepagent-lab", "chat")
+    route_pattern_reload = url_path_join(base_url, "deepagent-lab", "reload")
+    route_pattern_resume = url_path_join(base_url, "deepagent-lab", "resume")
+    route_pattern_health = url_path_join(base_url, "deepagent-lab", "health")
+    route_pattern_cancel = url_path_join(base_url, "deepagent-lab", "cancel")
 
     # Add handlers
     handlers = [
