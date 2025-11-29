@@ -1179,7 +1179,7 @@ wheels = [
 ]
 
 [[package]]
-name = "jupyter-deepagents"
+name = "deepagent-lab"
 source = { editable = "." }
 dependencies = [
     { name = "deepagents" },

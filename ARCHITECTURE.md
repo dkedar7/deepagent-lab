@@ -82,7 +82,7 @@ Utility function for making requests to the backend API:
 
 ## Backend Components
 
-### 1. Agent Wrapper ([jupyter_deepagents/agent_wrapper.py](jupyter_deepagents/agent_wrapper.py))
+### 1. Agent Wrapper ([deepagent_lab/agent_wrapper.py](deepagent_lab/agent_wrapper.py))
 
 Wraps your agent to provide a consistent interface:
 
@@ -202,13 +202,13 @@ Located in [tsconfig.json](tsconfig.json):
 
 If your agent uses a different format than `{"messages": [...]}`, modify:
 
-1. [jupyter_deepagents/agent_wrapper.py](jupyter_deepagents/agent_wrapper.py):
+1. [deepagent_lab/agent_wrapper.py](deepagent_lab/agent_wrapper.py):
    - Update `invoke()` method to format input correctly
    - Update response extraction logic
 
 ### Adding New API Endpoints
 
-1. Add handler class in [jupyter_deepagents/handlers.py](jupyter_deepagents/handlers.py)
+1. Add handler class in [deepagent_lab/handlers.py](deepagent_lab/handlers.py)
 2. Register route in `setup_handlers()`
 3. Add corresponding frontend function in [src/handler.ts](src/handler.ts)
 
@@ -226,7 +226,7 @@ All styles use JupyterLab CSS variables for theme consistency.
 
 1. Make changes to TypeScript files in `src/`
 2. Run `jlpm watch` to auto-rebuild
-3. Make changes to Python files in `jupyter_deepagents/`
+3. Make changes to Python files in `deepagent_lab/`
 4. Use reload button in chat UI to reload agent
 5. Refresh JupyterLab to see frontend changes
 
