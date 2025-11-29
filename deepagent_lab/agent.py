@@ -1,32 +1,61 @@
+"""
+Default agent configuration for deepagent-lab.
+
+This agent is used when no custom agent is specified. It provides basic
+notebook manipulation capabilities with filesystem access.
+"""
+import os
+from pathlib import Path
+from typing import Annotated
+
 from dotenv import load_dotenv
 load_dotenv()
 
 from deepagents import create_deep_agent
 from deepagents.backends import FilesystemBackend
 from langgraph.checkpoint.memory import MemorySaver
-from langchain.agents.middleware import HumanInTheLoopMiddleware
 
-# Define tools
-from typing import Annotated
+# Import configuration
+from deepagent_lab import config
+
+# Import notebook tools
 from jupyter_client import BlockingKernelClient, find_connection_file
 import nbformat
 import requests
-import os
 
+# Kernel clients cache
 kernel_clients = {}
+
+# === Configuration ===
+
+# Get workspace root from environment or config
+workspace_root = os.getenv('DEEPAGENT_WORKSPACE_ROOT')
+if workspace_root:
+    WORKSPACE = Path(workspace_root)
+elif config.WORKSPACE_ROOT:
+    WORKSPACE = config.WORKSPACE_ROOT
+else:
+    WORKSPACE = Path(".")
+
+# Get Jupyter server configuration
+JUPYTER_SERVER_URL = config.JUPYTER_SERVER_URL
+JUPYTER_TOKEN = config.JUPYTER_TOKEN
+
+# Model configuration
+MODEL_NAME = config.MODEL_NAME
+MODEL_TEMPERATURE = config.MODEL_TEMPERATURE
+
+# === Tool Definitions ===
 
 def get_notebook_kernel_id(notebook_path: str) -> str:
     """Get kernel ID for a running notebook via Jupyter Server API."""
-    server_url = 'http://localhost:8889'
-    token = os.getenv('JUPYTER_TOKEN', '12345')
-    
     response = requests.get(
-        f'{server_url}/api/sessions',
-        headers={'Authorization': f'token {token}'} if token else {}
+        f'{JUPYTER_SERVER_URL}/api/sessions',
+        headers={'Authorization': f'token {JUPYTER_TOKEN}'} if JUPYTER_TOKEN else {}
     )
-    
+
     if response.status_code != 200:
-        raise ValueError(f"Cannot connect to Jupyter server at {server_url}")
+        raise ValueError(f"Cannot connect to Jupyter server at {JUPYTER_SERVER_URL}")
     
     sessions = response.json()
     for session in sessions:
@@ -179,6 +208,8 @@ def execute_cell(
     return f"Executed cell [{execution_count}] in {notebook_path}:\n{output_summary}"
 
 
+# === Agent Configuration ===
+
 # Build the deep agent
 system_prompt = """You're a JupyterLab assistant. Use the provided tools to manipulate and execute code cells in the specified notebook files as per user instructions.
 
@@ -209,10 +240,27 @@ Assistant:
 - NEVER run risky or harmful code without explicit user consent.
 """
 
-
-agent = create_deep_agent(
-    system_prompt=system_prompt,
-    backend=FilesystemBackend(root_dir=".", virtual_mode=True),
-    checkpointer=MemorySaver(),
-    tools=[create_notebook, insert_code_cell, modify_cell, execute_cell]
+# Create backend with workspace configuration
+backend = FilesystemBackend(
+    root_dir=str(WORKSPACE),
+    virtual_mode=config.VIRTUAL_MODE
 )
+
+# Create agent with configuration
+agent = create_deep_agent(
+    model=MODEL_NAME,
+    system_prompt=system_prompt,
+    backend=backend,
+    checkpointer=MemorySaver(),
+    tools=[create_notebook, insert_code_cell, modify_cell, execute_cell],
+    temperature=MODEL_TEMPERATURE
+)
+
+# Log configuration if in debug mode
+if config.DEBUG:
+    print(f"Agent Configuration:")
+    print(f"  Workspace: {WORKSPACE}")
+    print(f"  Model: {MODEL_NAME}")
+    print(f"  Temperature: {MODEL_TEMPERATURE}")
+    print(f"  Virtual Mode: {config.VIRTUAL_MODE}")
+    print(f"  Jupyter Server: {JUPYTER_SERVER_URL}")
