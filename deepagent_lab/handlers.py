@@ -315,11 +315,11 @@ def setup_handlers(web_app):
     base_url = web_app.settings["base_url"]
 
     # Define route patterns
-    route_pattern_chat = url_path_join(base_url, "jupyter-deepagents", "chat")
-    route_pattern_reload = url_path_join(base_url, "jupyter-deepagents", "reload")
-    route_pattern_resume = url_path_join(base_url, "jupyter-deepagents", "resume")
-    route_pattern_health = url_path_join(base_url, "jupyter-deepagents", "health")
-    route_pattern_cancel = url_path_join(base_url, "jupyter-deepagents", "cancel")
+    route_pattern_chat = url_path_join(base_url, "deepagent-lab", "chat")
+    route_pattern_reload = url_path_join(base_url, "deepagent-lab", "reload")
+    route_pattern_resume = url_path_join(base_url, "deepagent-lab", "resume")
+    route_pattern_health = url_path_join(base_url, "deepagent-lab", "health")
+    route_pattern_cancel = url_path_join(base_url, "deepagent-lab", "cancel")
 
     # Add handlers
     handlers = [

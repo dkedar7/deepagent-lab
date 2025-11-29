@@ -1,14 +1,14 @@
 #!/bin/bash
-# Setup and Installation Script for Jupyter DeepAgents Extension
+# Setup and Installation Script for DeepAgent Lab Extension
 
 set -e  # Exit on error
 
-echo "🚀 Jupyter DeepAgents - Installation Script"
+echo "🚀 DeepAgent Lab - Installation Script"
 echo "============================================"
 echo ""
 
 # Check if virtual environment exists
-VENV_PATH="/Users/dkedar7/.venvs/jupyter-deepagents"
+VENV_PATH="/Users/dkedar7/.venvs/deepagent-lab"
 
 if [ ! -d "$VENV_PATH" ]; then
     echo "📦 Creating virtual environment..."
@@ -35,7 +35,7 @@ echo "📦 Installing Python package..."
 uv pip install -e .
 
 echo "✅ Enabling server extension..."
-jupyter server extension enable jupyter_deepagents
+jupyter server extension enable deepagent_lab
 
 echo "🔗 Linking labextension..."
 jupyter labextension develop . --overwrite

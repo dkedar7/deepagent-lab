@@ -14,7 +14,7 @@ load_dotenv()
 class AgentWrapper:
     """Wrapper class for LangGraph agent."""
 
-    def __init__(self, agent_module_path: str = "jupyter_deepagents.my_agent", agent_variable_name: Optional[str] = None):
+    def __init__(self, agent_module_path: str = "deepagent_lab.my_agent", agent_variable_name: Optional[str] = None):
         """
         Initialize the agent wrapper.
 

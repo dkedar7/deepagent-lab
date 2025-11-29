@@ -266,7 +266,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) 
     try {
       const xsrfToken = getXSRFToken();
       const response = await fetch(
-        `/jupyter-deepagents/chat`,
+        `/deepagent-lab/chat`,
         {
           method: 'POST',
           headers: {
@@ -447,7 +447,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) 
     try {
       const xsrfToken = getXSRFToken();
       const response = await fetch(
-        `/jupyter-deepagents/resume`,
+        `/deepagent-lab/resume`,
         {
           method: 'POST',
           headers: {

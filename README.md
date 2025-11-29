@@ -1,4 +1,4 @@
-# jupyter-deepagents
+# deepagent-lab
 
 A JupyterLab extension that provides an elegant chat interface for AI agents with human-in-the-loop capabilities.
 
@@ -31,7 +31,7 @@ A JupyterLab extension that provides an elegant chat interface for AI agents wit
 ## Installation
 
 ```bash
-pip install jupyter-deepagents
+pip install deepagent-lab
 ```
 
 ## Usage

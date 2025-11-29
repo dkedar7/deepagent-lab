@@ -3,7 +3,7 @@ requires = ["hatchling>=1.5.0", "jupyterlab>=4.0.0,<5", "hatch-nodejs-version"]
 build-backend = "hatchling.build"
 
 [project]
-name = "jupyter-deepagents"
+name = "deepagent-lab"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
@@ -41,25 +41,25 @@ source = "nodejs"
 fields = ["description", "authors", "urls"]
 
 [tool.hatch.build.targets.sdist]
-artifacts = ["jupyter_deepagents/labextension"]
+artifacts = ["deepagent_lab/labextension"]
 exclude = [".github", "binder"]
 
 [tool.hatch.build.targets.wheel.shared-data]
-"jupyter_deepagents/labextension" = "share/jupyter/labextensions/jupyter-deepagents"
-"install.json" = "share/jupyter/labextensions/jupyter-deepagents/install.json"
+"deepagent_lab/labextension" = "share/jupyter/labextensions/deepagent-lab"
+"install.json" = "share/jupyter/labextensions/deepagent-lab/install.json"
 "jupyter-config/server-config" = "etc/jupyter/jupyter_server_config.d"
 
 [tool.hatch.build.hooks.version]
-path = "jupyter_deepagents/_version.py"
+path = "deepagent_lab/_version.py"
 
 [tool.hatch.build.hooks.jupyter-builder]
 dependencies = ["hatch-jupyter-builder>=0.5"]
 build-function = "hatch_jupyter_builder.npm_builder"
 ensured-targets = [
-    "jupyter_deepagents/labextension/static/style.js",
-    "jupyter_deepagents/labextension/package.json",
+    "deepagent_lab/labextension/static/style.js",
+    "deepagent_lab/labextension/package.json",
 ]
-skip-if-exists = ["jupyter_deepagents/labextension/static/style.js"]
+skip-if-exists = ["deepagent_lab/labextension/static/style.js"]
 
 [tool.hatch.build.hooks.jupyter-builder.build-kwargs]
 build_cmd = "build:prod"
