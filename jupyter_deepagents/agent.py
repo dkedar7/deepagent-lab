@@ -214,5 +214,5 @@ agent = create_deep_agent(
     system_prompt=system_prompt,
     backend=FilesystemBackend(root_dir=".", virtual_mode=True),
     checkpointer=MemorySaver(),
-    tools=[insert_code_cell, modify_cell, execute_cell]
+    tools=[create_notebook, insert_code_cell, modify_cell, execute_cell]
 )
