@@ -37,7 +37,7 @@ The deepagent-lab extension consists of two main components:
 │  │  └──────────────┬───────────────────────┘      │    │
 │  │                 │                               │    │
 │  │  ┌──────────────┴───────────────────────┐      │    │
-│  │  │  Your Agent (my_agent.py)             │      │    │
+│  │  │  Your Agent (agent.py)             │      │    │
 │  │  │  - Graph definition                   │      │    │
 │  │  │  - Tools (notebook, filesystem, etc.) │      │    │
 │  │  └──────────────────────────────────────┘      │    │
@@ -86,14 +86,14 @@ Utility function for making requests to the backend API:
 
 Wraps your agent to provide a consistent interface:
 
-- **Loading**: Dynamically imports `my_agent.py` module
+- **Loading**: Dynamically imports `agent.py` module
 - **Invoke**: Calls `agent.invoke()` with proper input format
 - **Stream**: Calls `agent.stream()` for streaming responses
 - **Reload**: Supports hot-reloading of agent module during development
 - **Error Handling**: Provides helpful error messages
 
 The wrapper expects your agent to:
-- Be exported as `agent` or `graph` from `my_agent.py`
+- Be exported as `agent` or `graph` from `agent.py`
 - Accept input in the format: `{"messages": [...]}`
 - Return output containing a `messages` field
 
@@ -261,7 +261,7 @@ All styles use JupyterLab CSS variables for theme consistency.
 To test the extension:
 
 1. Install in development mode
-2. Create a simple test agent in `my_agent.py`
+2. Create a simple test agent in `agent.py`
 3. Start JupyterLab
 4. Open chat interface
 5. Verify:

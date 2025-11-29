@@ -119,7 +119,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) 
         addSystemMessage('Agent is ready and connected');
       } else {
         setAgentStatus('error');
-        addSystemMessage('Agent not loaded. Please ensure my_agent.py is configured correctly.');
+        addSystemMessage('Agent not loaded. Please ensure agent.py is configured correctly.');
       }
     } catch (error) {
       console.error('Error checking agent health:', error);

@@ -212,8 +212,6 @@ __marimo__/
 tsconfig.tsbuildinfo
 *.tsbuildinfo
 
-# Development/test files
-# my_agent.py
 
 # JupyterLab extension build outputs (already handled by Python packaging)
 *.bundled.js

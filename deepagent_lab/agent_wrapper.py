@@ -14,13 +14,13 @@ load_dotenv()
 class AgentWrapper:
     """Wrapper class for LangGraph agent."""
 
-    def __init__(self, agent_module_path: str = "deepagent_lab.my_agent", agent_variable_name: Optional[str] = None):
+    def __init__(self, agent_module_path: str = "deepagent_lab.agent", agent_variable_name: Optional[str] = None):
         """
         Initialize the agent wrapper.
 
         Args:
             agent_module_path: Path to the module containing the agent.
-                              Defaults to "my_agent" which will import from my_agent.py
+                              Defaults to "agent" which will import from agent.py
                               Can be overridden by JUPYTER_AGENT_PATH environment variable.
             agent_variable_name: Name of the variable to load from the module.
                                 Defaults to None (will try 'agent' then 'graph').
@@ -428,7 +428,7 @@ class AgentWrapper:
             if os.environ.get('JUPYTER_AGENT_PATH'):
                 error_msg += f"Check JUPYTER_AGENT_PATH: {os.environ.get('JUPYTER_AGENT_PATH')}"
             else:
-                error_msg += "Please create my_agent.py with your LangGraph agent or set JUPYTER_AGENT_PATH."
+                error_msg += "Please create agent.py with your LangGraph agent or set JUPYTER_AGENT_PATH."
             yield {
                 "error": error_msg,
                 "status": "error"

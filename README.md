@@ -38,7 +38,7 @@ pip install deepagent-lab
 
 ### Quick Start
 
-1. **Create your agent** in `my_agent.py`:
+1. **Create your agent** in `agent.py`:
 
 ```python
 from deepagents import create_deep_agent
@@ -98,7 +98,7 @@ No confirmation dialogs or reason prompts - just one click!
 
 #### Option 1: Default Location (Recommended)
 
-Create `my_agent.py` in your working directory with an `agent` variable:
+Create `agent.py` in your working directory with an `agent` variable:
 
 ```python
 from langgraph.prebuilt import create_react_agent
