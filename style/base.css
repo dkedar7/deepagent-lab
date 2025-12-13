@@ -326,17 +326,16 @@
 }
 
 .deepagents-message-content {
-  line-height: var(--da-leading-none);
-  white-space: pre-wrap;
+  line-height: var(--da-leading-normal);
+  /* white-space: pre-wrap; */
   color: var(--da-foreground);
   font-family: var(--da-font-sans);
 }
 
-/* Reduce spacing in markdown-rendered content */
+/* Readable spacing for markdown paragraphs */
 .deepagents-message-assistant .deepagents-message-content p {
-  margin: 0;
-  padding: 0.1em 0;
-  line-height: 1.0;
+  margin: 0.3em 0;
+  line-height: var(--da-leading-normal);
 }
 
 .deepagents-message-assistant .deepagents-message-content p:first-child {
@@ -362,15 +361,50 @@
   line-height: 1.0;
 }
 
-.deepagents-message-assistant .deepagents-message-content h1,
-.deepagents-message-assistant .deepagents-message-content h2,
-.deepagents-message-assistant .deepagents-message-content h3,
-.deepagents-message-assistant .deepagents-message-content h4,
+/* Heading hierarchy with explicit sizes */
+.deepagents-message-assistant .deepagents-message-content h1 {
+  font-size: 1.5em;
+  font-weight: var(--da-weight-bold);
+  color: var(--da-foreground);
+  margin: 1.2em 0 0.3em 0;
+  line-height: var(--da-leading-tight);
+  border-bottom: 2px solid var(--da-border);
+  padding-bottom: 0.3em;
+}
+
+.deepagents-message-assistant .deepagents-message-content h2 {
+  font-size: 1.3em;
+  font-weight: var(--da-weight-semibold);
+  color: var(--da-foreground);
+  margin: 1em 0 0.3em 0;
+  line-height: var(--da-leading-tight);
+}
+
+.deepagents-message-assistant .deepagents-message-content h3 {
+  font-size: 1.15em;
+  font-weight: var(--da-weight-semibold);
+  color: var(--da-foreground);
+  margin: 0.8em 0 0.3em 0;
+  line-height: var(--da-leading-tight);
+}
+
+.deepagents-message-assistant .deepagents-message-content h4 {
+  font-size: 1em;
+  font-weight: var(--da-weight-semibold);
+  color: var(--da-foreground-muted);
+  margin: 0.6em 0 0.2em 0;
+  line-height: var(--da-leading-tight);
+}
+
 .deepagents-message-assistant .deepagents-message-content h5,
 .deepagents-message-assistant .deepagents-message-content h6 {
-  margin: 0.3em 0 0.1em 0;
-  color: #1e293b;
-  font-weight: 600;
+  font-size: 0.9em;
+  font-weight: var(--da-weight-medium);
+  color: var(--da-foreground-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0.5em 0 0.2em 0;
+  line-height: var(--da-leading-tight);
 }
 
 .deepagents-message-assistant .deepagents-message-content h1:first-child,
@@ -385,38 +419,138 @@
 .deepagents-message-assistant .deepagents-message-content ul,
 .deepagents-message-assistant .deepagents-message-content ol {
   margin: 0.2em 0;
-  padding-left: 1.5em;
+  padding-left: 2em;
 }
 
 .deepagents-message-assistant .deepagents-message-content li {
   margin: 0;
+  padding: 0;
+  line-height: var(--da-leading-normal);
+}
+
+.deepagents-message-assistant .deepagents-message-content li p {
+  margin: 0;
+}
+
+/* Nested lists */
+.deepagents-message-assistant .deepagents-message-content ul ul,
+.deepagents-message-assistant .deepagents-message-content ol ol,
+.deepagents-message-assistant .deepagents-message-content ul ol,
+.deepagents-message-assistant .deepagents-message-content ol ul {
+  margin: 0.1em 0;
 }
 
 .deepagents-message-assistant .deepagents-message-content code {
-  background: #f1f5f9;
+  background: var(--da-surface-elevated);
   padding: 0.15em 0.4em;
-  border-radius: 4px;
-  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  border-radius: var(--da-radius-sm);
+  font-family: var(--da-font-mono);
   font-size: 0.9em;
-  color: #475569;
-  border: 1px solid #e2e8f0;
+  color: var(--da-foreground-muted);
+  border: 1px solid var(--da-border);
 }
 
 .deepagents-message-assistant .deepagents-message-content pre {
-  margin: 0.6em 0;
-  padding: 12px 14px;
-  background: #f8fafc;
-  border-radius: 6px;
+  margin: 1em 0;
+  padding: var(--da-space-4);
+  background: var(--da-surface-elevated);
+  border: 1px solid var(--da-border);
+  border-left: 3px solid var(--da-primary);
+  border-radius: var(--da-radius-md);
   overflow-x: auto;
-  border: 1px solid #e2e8f0;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--da-shadow-sm);
 }
 
 .deepagents-message-assistant .deepagents-message-content pre code {
   background: none;
   padding: 0;
   border: none;
-  color: #334155;
+  color: var(--da-foreground);
+  font-family: var(--da-font-mono);
+  font-size: 0.9em;
+  line-height: var(--da-leading-normal);
+}
+
+/* Links */
+.deepagents-message-assistant .deepagents-message-content a {
+  color: var(--da-primary);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--da-transition-fast);
+  font-weight: var(--da-weight-medium);
+}
+
+.deepagents-message-assistant .deepagents-message-content a:hover {
+  border-bottom-color: var(--da-primary);
+}
+
+/* Blockquotes */
+.deepagents-message-assistant .deepagents-message-content blockquote {
+  margin: 1em 0;
+  padding: 0.75em 1em;
+  border-left: 4px solid var(--da-primary);
+  background: var(--da-surface-elevated);
+  border-radius: 0 var(--da-radius-sm) var(--da-radius-sm) 0;
+  font-style: italic;
+  color: var(--da-foreground-muted);
+}
+
+.deepagents-message-assistant .deepagents-message-content blockquote p {
+  margin: 0.5em 0;
+}
+
+/* Horizontal rules */
+.deepagents-message-assistant .deepagents-message-content hr {
+  margin: 1.5em 0;
+  border: none;
+  border-top: 2px solid var(--da-border);
+  opacity: 0.5;
+}
+
+/* Tables */
+.deepagents-message-assistant .deepagents-message-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 0.9em;
+  border: 1px solid var(--da-border);
+  border-radius: var(--da-radius-sm);
+  overflow: hidden;
+}
+
+.deepagents-message-assistant .deepagents-message-content th,
+.deepagents-message-assistant .deepagents-message-content td {
+  padding: 0.6em 0.9em;
+  border: 1px solid var(--da-border);
+  text-align: left;
+}
+
+.deepagents-message-assistant .deepagents-message-content th {
+  background: var(--da-surface-elevated);
+  font-weight: var(--da-weight-semibold);
+  color: var(--da-foreground);
+}
+
+.deepagents-message-assistant .deepagents-message-content tr:nth-child(even) {
+  background: var(--da-surface-elevated);
+}
+
+.deepagents-message-assistant .deepagents-message-content tbody tr:hover {
+  background: var(--da-surface-elevated);
+  opacity: 0.9;
+}
+
+/* Strikethrough */
+.deepagents-message-assistant .deepagents-message-content del {
+  color: var(--da-foreground-muted);
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+/* Task lists */
+.deepagents-message-assistant .deepagents-message-content input[type="checkbox"] {
+  margin-right: 0.5em;
+  cursor: pointer;
 }
 
 /* Intermediate messages styling - Refined */
@@ -498,7 +632,7 @@
   font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
   line-height: 1.4;
   overflow-x: auto;
-  white-space: pre-wrap;
+  /* white-space: pre-wrap; */
   word-wrap: break-word;
   color: #475569;
 }
@@ -513,7 +647,7 @@
   font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
   line-height: 1.4;
   overflow-x: auto;
-  white-space: pre-wrap;
+  /* white-space: pre-wrap; */
   word-wrap: break-word;
 }
 
