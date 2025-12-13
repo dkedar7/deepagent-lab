@@ -5,6 +5,7 @@ import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { NotebookPanel } from '@jupyterlab/notebook';
 import { requestAPI } from './handler';
 import ReactMarkdown from 'react-markdown';
+import { Send, RotateCw, Trash2, Square, Circle, CheckCircle2, ArrowRight } from 'lucide-react';
 
 /**
  * Tool call interface
@@ -657,14 +658,14 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) 
             disabled={isLoading}
             title="Reload agent"
           >
-            ↻
+            <RotateCw size={14} />
           </button>
           <button
             className="deepagents-icon-button"
             onClick={clearChat}
             title="Clear chat"
           >
-            🗑
+            <Trash2 size={14} />
           </button>
         </div>
       </div>
@@ -720,7 +721,13 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) 
                     {message.todoList.map((todo, idx) => (
                       <div key={idx} className={`deepagents-todo-item deepagents-todo-${todo.status}`}>
                         <span className="deepagents-todo-marker">
-                          {todo.status === 'completed' ? '✓' : todo.status === 'in_progress' ? '→' : '○'}
+                          {todo.status === 'completed' ? (
+                            <CheckCircle2 size={16} />
+                          ) : todo.status === 'in_progress' ? (
+                            <ArrowRight size={16} />
+                          ) : (
+                            <Circle size={16} />
+                          )}
                         </span>
                         <span className="deepagents-todo-content">{todo.content}</span>
                       </div>
@@ -830,8 +837,9 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) 
             className="deepagents-stop-button"
             onClick={cancelExecution}
             title="Stop execution"
+            aria-label="Stop execution"
           >
-            ■
+            <Square size={16} fill="currentColor" />
           </button>
         ) : (
           <button
@@ -839,8 +847,9 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) 
             onClick={handleSendMessage}
             disabled={!inputValue.trim()}
             title="Send message"
+            aria-label="Send message"
           >
-            ↑
+            <Send size={18} />
           </button>
         )}
       </div>
