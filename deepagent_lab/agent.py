@@ -253,7 +253,6 @@ agent = create_deep_agent(
     backend=backend,
     checkpointer=MemorySaver(),
     tools=[create_notebook, insert_code_cell, modify_cell, execute_cell],
-    temperature=MODEL_TEMPERATURE
 )
 
 # Log configuration if in debug mode
@@ -261,6 +260,5 @@ if config.DEBUG:
     print(f"Agent Configuration:")
     print(f"  Workspace: {WORKSPACE}")
     print(f"  Model: {MODEL_NAME}")
-    print(f"  Temperature: {MODEL_TEMPERATURE}")
     print(f"  Virtual Mode: {config.VIRTUAL_MODE}")
     print(f"  Jupyter Server: {JUPYTER_SERVER_URL}")
