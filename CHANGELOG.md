@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2025-12-14
+
+### Added
+- **LangGraph Utilities Module**: New `langgraph_utils.py` providing helper functions for LangGraph integration
+  - Utility functions for agent state management and graph operations
+  - Enhanced agent execution framework with better LangGraph support
+
+### Changed
+- **Improved Chat Message Styling**: Enhanced message content styling for better readability
+  - Clearer visual hierarchy and structure
+  - More responsive and polished UI design
+  - Better spacing and typography for message content
+
+- **Refactored Interrupt Handling**: Improved interrupt mechanism for human-in-the-loop interactions
+  - More reliable interrupt processing
+  - Better clarity in interrupt flow
+  - Enhanced responsiveness during agent execution
+
+- **Enhanced Notebook Cell Operations**: Updated to use Jupyter Server API for saving changes
+  - Direct integration with Jupyter Server API for cell modifications
+  - More reliable cell save operations
+  - Better notebook state management
+
+- **Agent Execution Refactoring**: Streamlined agent execution logic in `agent_wrapper.py`
+  - Cleaner execution flow leveraging LangGraph utilities
+  - Improved error handling and state management
+  - Better integration with LangGraph graph structures
+
+### Fixed
+- Improved stability and reliability of notebook cell operations
+
 ## [0.1.2] - 2025-11-29
 
 ### Added
