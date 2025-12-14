@@ -737,7 +737,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) 
                 {message.interrupt && (
                   <div className="deepagents-interrupt">
                     <div className="deepagents-interrupt-header">
-                      Human approval required
+                      Approval required
                     </div>
                     <div className="deepagents-interrupt-description">
                       Tool: <strong>{message.interrupt.action_requests[0]?.tool}</strong>

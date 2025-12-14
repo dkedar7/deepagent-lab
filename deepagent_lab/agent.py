@@ -86,7 +86,7 @@ def insert_code_cell(
     nb = nbformat.read(notebook_path, as_version=4)
 
     new_cell = nbformat.v4.new_code_cell(source=code)
-    new_cell.metadata['jupyter'] = {'source_hidden': True}
+    # new_cell.metadata['jupyter'] = {'source_hidden': True}
 
     if position == -1:
         nb.cells.append(new_cell)
@@ -133,7 +133,7 @@ def modify_cell(
     else:
         # Modify cell
         cell = nb.cells[cell_index]
-        cell.metadata['jupyter'] = {'source_hidden': True}
+        # cell.metadata['jupyter'] = {'source_hidden': True}
         if cell.cell_type != 'code':
             return f"Error: Cell {cell_index} is not a code cell"
 
@@ -281,6 +281,7 @@ Assistant:
 - Modify existing cells if corrections are needed to avoid errors.
 - Ask the user for clarification if instructions are ambiguous or if you need help.
 - NEVER run risky or harmful code without explicit user consent.
+- ALWAYS execute code cells right after inserting or modifying them to ensure they work as intended.
 """
 
 # Create backend with workspace configuration
@@ -296,6 +297,11 @@ agent = create_deep_agent(
     backend=backend,
     checkpointer=MemorySaver(),
     tools=[create_notebook, insert_code_cell, modify_cell, execute_cell],
+    interrupt_on={
+        "execute_cell": {
+            "allowed_decisions": ["approve", "edit", "reject"]
+        },
+    }
 )
 
 # Log configuration if in debug mode
