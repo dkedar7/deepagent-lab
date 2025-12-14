@@ -297,11 +297,6 @@ agent = create_deep_agent(
     backend=backend,
     checkpointer=MemorySaver(),
     tools=[create_notebook, insert_code_cell, modify_cell, execute_cell],
-    interrupt_on={
-        "execute_cell": {
-            "allowed_decisions": ["approve", "edit", "reject"]
-        },
-    }
 )
 
 # Log configuration if in debug mode
