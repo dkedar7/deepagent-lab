@@ -79,22 +79,37 @@ def insert_code_cell(
     notebook_path: Annotated[str, "Notebook filename"],
     position: Annotated[int, "Index to insert cell at (-1 for append)"] = -1
 ) -> str:
-    """Insert a new code cell into the notebook file."""
+    """Insert a new code cell into the notebook via Jupyter Server API."""
 
     notebook_path = notebook_path.strip("/")
-    
+
     nb = nbformat.read(notebook_path, as_version=4)
+
     new_cell = nbformat.v4.new_code_cell(source=code)
     new_cell.metadata['jupyter'] = {'source_hidden': True}
-    
+
     if position == -1:
         nb.cells.append(new_cell)
         cell_idx = len(nb.cells) - 1
     else:
         nb.cells.insert(position, new_cell)
         cell_idx = position
-    
-    nbformat.write(nb, notebook_path)
+
+    # Save via API to maintain scroll position
+    save_response = requests.put(
+        f'{JUPYTER_SERVER_URL}/api/contents/{notebook_path}',
+        headers={'Authorization': f'token {JUPYTER_TOKEN}'} if JUPYTER_TOKEN else {},
+        json={
+            'type': 'notebook',
+            'format': 'json',
+            'content': nb
+        }
+    )
+
+    if save_response.status_code not in [200, 201]:
+        # Fall back to file-based write
+        nbformat.write(nb, notebook_path)
+
     return f"Inserted code cell at index {cell_idx} in {notebook_path}"
 
 def modify_cell(
@@ -102,33 +117,47 @@ def modify_cell(
     cell_index: Annotated[int, "Index of cell to modify"],
     new_code: Annotated[str, "New code (empty string to delete cell)"]
 ) -> str:
-    """Modify or delete an existing cell in the notebook."""
+    """Modify or delete an existing cell in the notebook via Jupyter Server API."""
 
     notebook_path = notebook_path.strip("/")
-    
+
     nb = nbformat.read(notebook_path, as_version=4)
-    
+
     if cell_index < 0 or cell_index >= len(nb.cells):
         return f"Error: Cell index {cell_index} out of range (0-{len(nb.cells)-1})"
-    
+
     # Delete cell if new_code is empty
     if new_code == "":
         removed_cell = nb.cells.pop(cell_index)
+        result_msg = f"Deleted cell at index {cell_index} in {notebook_path}"
+    else:
+        # Modify cell
+        cell = nb.cells[cell_index]
+        cell.metadata['jupyter'] = {'source_hidden': True}
+        if cell.cell_type != 'code':
+            return f"Error: Cell {cell_index} is not a code cell"
+
+        cell.source = new_code
+        cell.outputs = []  # Clear outputs when modifying
+        cell.execution_count = None  # Reset execution count
+        result_msg = f"Modified cell at index {cell_index} in {notebook_path}"
+
+    # Save via API to maintain scroll position
+    save_response = requests.put(
+        f'{JUPYTER_SERVER_URL}/api/contents/{notebook_path}',
+        headers={'Authorization': f'token {JUPYTER_TOKEN}'} if JUPYTER_TOKEN else {},
+        json={
+            'type': 'notebook',
+            'format': 'json',
+            'content': nb
+        }
+    )
+
+    if save_response.status_code not in [200, 201]:
+        # Fall back to file-based write
         nbformat.write(nb, notebook_path)
-        return f"Deleted cell at index {cell_index} in {notebook_path}"
-    
-    # Modify cell
-    cell = nb.cells[cell_index]
-    cell.metadata['jupyter'] = {'source_hidden': True}
-    if cell.cell_type != 'code':
-        return f"Error: Cell {cell_index} is not a code cell"
-    
-    cell.source = new_code
-    cell.outputs = []  # Clear outputs when modifying
-    cell.execution_count = None  # Reset execution count
-    
-    nbformat.write(nb, notebook_path)
-    return f"Modified cell at index {cell_index} in {notebook_path}"
+
+    return result_msg
 
 def execute_cell(
     notebook_path: Annotated[str, "Notebook filename"],
@@ -137,14 +166,14 @@ def execute_cell(
     """Execute a cell in the notebook kernel and update outputs in the file."""
 
     notebook_path = notebook_path.strip("/")
-    
-    # Read notebook
+
     nb = nbformat.read(notebook_path, as_version=4)
+
     cell = nb.cells[cell_index]
-    
+
     if cell.cell_type != 'code':
         return f"Cell {cell_index} is not a code cell"
-    
+
     # Connect to kernel
     if notebook_path not in kernel_clients:
         kernel_id = get_notebook_kernel_id(notebook_path)
@@ -202,8 +231,22 @@ def execute_cell(
     # Update cell in notebook
     cell.execution_count = execution_count
     cell.outputs = outputs
-    nbformat.write(nb, notebook_path)
-    
+
+    # Save via API to maintain scroll position
+    save_response = requests.put(
+        f'{JUPYTER_SERVER_URL}/api/contents/{notebook_path}',
+        headers={'Authorization': f'token {JUPYTER_TOKEN}'} if JUPYTER_TOKEN else {},
+        json={
+            'type': 'notebook',
+            'format': 'json',
+            'content': nb
+        }
+    )
+
+    if save_response.status_code not in [200, 201]:
+        # Fall back to file-based write
+        nbformat.write(nb, notebook_path)
+
     output_summary = '\n'.join(output_texts) if output_texts else "(no output)"
     return f"Executed cell [{execution_count}] in {notebook_path}:\n{output_summary}"
 
