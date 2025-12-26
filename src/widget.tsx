@@ -886,9 +886,11 @@ export class ChatWidget extends ReactWidget {
 
   /**
    * Update the widget title with the agent name
+   * Note: We don't update title.label to keep the sidebar showing only the icon
    */
   updateAgentName(name: string): void {
-    this.title.label = name;
+    // Don't update title.label - we want icon-only in sidebar
+    // The agent name will still appear in the chat header
   }
 
   render(): JSX.Element {
