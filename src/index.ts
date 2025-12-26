@@ -38,7 +38,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     // Create widget immediately on startup
     const widget = new ChatWidget(app.shell, browserFactory);
     widget.id = 'deepagents-chat';
-    widget.title.label = 'Deep Agents';
+    // widget.title.label = 'Deep Agents';
     widget.title.icon = chatIcon;
     widget.title.closable = true;
 

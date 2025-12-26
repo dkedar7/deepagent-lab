@@ -292,6 +292,7 @@ backend = FilesystemBackend(
 
 # Create agent with configuration
 agent = create_deep_agent(
+    name="Default Agent",
     model=MODEL_NAME,
     system_prompt=system_prompt,
     backend=backend,

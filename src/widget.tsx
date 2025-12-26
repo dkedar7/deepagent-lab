@@ -80,16 +80,18 @@ interface Message {
 interface ChatComponentProps {
   shell: JupyterFrontEnd.IShell | null;
   browserFactory: IFileBrowserFactory | null;
+  onAgentNameChange?: (name: string) => void;
 }
 
 /**
  * Chat component
  */
-const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) => {
+const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory, onAgentNameChange }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [agentStatus, setAgentStatus] = useState<'unknown' | 'healthy' | 'error'>('unknown');
+  const [agentName, setAgentName] = useState<string>('Deep Agents');
   const [threadId, setThreadId] = useState<string>(() => crypto.randomUUID());
   const [awaitingDecision, setAwaitingDecision] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -117,6 +119,14 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) 
 
       if (response.agent_loaded) {
         setAgentStatus('healthy');
+
+        // Update agent name if available
+        const name = response.agent_name || 'Deep Agents';
+        setAgentName(name);
+        if (onAgentNameChange) {
+          onAgentNameChange(name);
+        }
+
         addSystemMessage('Agent is ready and connected');
       } else {
         setAgentStatus('error');
@@ -646,7 +656,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ shell, browserFactory }) 
     <div className="deepagents-chat-container">
       {/* Header */}
       <div className="deepagents-chat-header">
-        <h2 className="deepagents-chat-title">Deep Agents</h2>
+        <h2 className="deepagents-chat-title">{agentName}</h2>
         <div className="deepagents-chat-controls">
           <span
             className={`deepagents-status-indicator deepagents-status-${agentStatus}`}
@@ -874,10 +884,18 @@ export class ChatWidget extends ReactWidget {
     this.browserFactory = browserFactory;
   }
 
+  /**
+   * Update the widget title with the agent name
+   */
+  updateAgentName(name: string): void {
+    this.title.label = name;
+  }
+
   render(): JSX.Element {
     return <ChatComponent
       shell={this.shell}
       browserFactory={this.browserFactory}
+      onAgentNameChange={(name) => this.updateAgentName(name)}
     />;
   }
 }
