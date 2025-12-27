@@ -1,6 +1,23 @@
-# deepagent-lab
+# DeepAgent Lab
 
-A JupyterLab extension providing an AI agent chat interface with notebook manipulation capabilities and human-in-the-loop controls.
+<p align="center">
+  <a href="https://fastdash.app/"><img src="https://storage.googleapis.com/deepagents/cover.png" alt="Fast Dash" width=300></a>
+</p>
+<p align="center">
+    <em>Bring LangChain agents into your JupyterLab workflow</em>
+</p>
+
+
+</p>
+
+---
+
+* **Source code**: [github.com/dkedar7/deepagent-lab](https://github.com/dkedar7/deepagent-lab/)
+* **Installation**: `pip install -U deepagent-lab`
+
+---
+
+A JupyterLab extension to allow **your** LangChain agents access to JuputerLab notebooks and files, enabling natural language interactions with your data science projects **directly from JupyterLab**.
 
 ## Features
 
@@ -8,7 +25,8 @@ A JupyterLab extension providing an AI agent chat interface with notebook manipu
 - **Notebook Manipulation**: Built-in tools for creating, editing, and executing Jupyter notebooks
 - **Human-in-the-Loop**: Review and approve agent actions before execution
 - **Context Awareness**: Automatically sends workspace and file context to your agent
-- **Agent Portability**: Use any other langgraph-compatible agent seamlessly
+- **Custom Agents**: Use your own langgraph-compatible agents seamlessly
+- **Auto-Configuration**: Zero-config setup with automatic Jupyter server detection
 
 ## Installation
 
@@ -18,70 +36,63 @@ pip install deepagent-lab
 
 ## Quick Start
 
-1. **Set up your environment** (copy `.env.example` to `.env` and configure):
+### Recommended: Using the Launcher (Zero Configuration)
+
+Instead of `jupyter lab`, use `deepagent-lab` command for automatic setup.
+
+The easiest way to get started is using the `deepagent-lab` launcher command, which automatically configures everything for you:
 
 ```bash
-# Required: Jupyter server configuration (must match your JupyterLab startup)
-DEEPAGENT_JUPYTER_SERVER_URL=http://localhost:8889
-DEEPAGENT_JUPYTER_TOKEN=8e2121e58cd3f9e13fc05fc020955c6e # Generate with python3 -c "import secrets; print(secrets.token_hex(16))"
+# Set your API key (if using the default agent)
+export ANTHROPIC_API_KEY=your-api-key-here
 
-# If using the default agent, Anthropic API key is required
-ANTHROPIC_API_KEY=your-api-key-here
-
-# Or if you want to use your agent, specify the location here
-DEEPAGENT_AGENT_SPEC=./my_agent.py:agent
+# Start JupyterLab with auto-configuration
+deepagent-lab
 ```
 
-2. **Start JupyterLab** with matching server URL and token:
+That's it! The launcher will:
+- Auto-detect an available port (starting from 8888)
+- Generate a secure authentication token
+- Set the required environment variables
+- Launch JupyterLab with the proper configuration
+
+**Using custom arguments:**
+```bash
+# All jupyter lab arguments are supported
+deepagent-lab --no-browser
+deepagent-lab --port 8889
+```
+
+### Alternative: Manual Configuration
+
+If you prefer manual control or need to use `jupyter lab` directly, you can set the environment variables yourself:
+
+1. **Configure environment variables** (create a `.env` file or export):
 
 ```bash
-# Start JupyterLab with values matching your .env file
-jupyter lab --port=8889 --IdentityProvider.token=8e2121e58cd3f9e13fc05fc020955c6e
+# Required: Jupyter server configuration
+export DEEPAGENT_JUPYTER_SERVER_URL=http://localhost:8888
+export DEEPAGENT_JUPYTER_TOKEN=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
+
+# If using the default agent, set your API key
+export ANTHROPIC_API_KEY=your-api-key-here
 ```
 
-**Important:** The Jupyter server URL and token in your `.env` file must match the values JupyterLab uses when starting up. This allows the agent to connect to notebook kernels for code execution.
-
-3. **Open the chat interface** by clicking the chat icon in the right sidebar
-
-4. **Start chatting** with your agent!
-
-## Agent Configuration
-
-The extension uses the **DEEPAGENT_** prefix for all environment variables, enabling full compatibility with [deepagent-dash](https://github.com/dkedar7/deepagent-dash).
-
-### Quick Configuration
-
-**Option 1: Use the default agent**
-- The extension includes a built-in agent for notebook manipulation
-- No configuration needed - just start chatting!
-
-**Option 2: Use a custom agent**
-
-Create a custom agent and point to it using environment variables:
+2. **Start JupyterLab** with matching configuration:
 
 ```bash
-# Agent spec in format "module_or_file:variable"
-DEEPAGENT_AGENT_SPEC=./my_agent.py:agent
+jupyter lab --port 8888 --IdentityProvider.token=$DEEPAGENT_JUPYTER_TOKEN
 ```
 
-### Environment Variables
+**Important:** The server URL and token must match between your environment variables and JupyterLab's startup parameters.
 
-All configuration uses the `DEEPAGENT_` prefix for compatibility with deepagent-dash:
+## Using Custom Agents
 
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `DEEPAGENT_AGENT_SPEC` | Agent location (`path:variable`) | Uses default agent |
-| `DEEPAGENT_WORKSPACE_ROOT` | Working directory for agent | JupyterLab root |
-| `DEEPAGENT_MODEL_NAME` | Model identifier | `anthropic:claude-sonnet-4-20250514` |
-| `DEEPAGENT_MODEL_TEMPERATURE` | Model temperature (0.0-1.0) | `0.0` |
-| `DEEPAGENT_JUPYTER_SERVER_URL` | Jupyter server URL | `http://localhost:8889` |
-| `DEEPAGENT_JUPYTER_TOKEN` | Jupyter auth token | `12345` |
-| `DEEPAGENT_VIRTUAL_MODE` | Safe mode for filesystem | `true` |
-| `DEEPAGENT_DEBUG` | Enable debug logging | `false` |
+Deepagent-lab is designed to work with any langgraph-compatible agent. You can easily use your own langgraph-compatible agents instead of the default agent.
 
-See [.env.example](.env.example) for complete configuration options.
+### Creating a Custom Agent
 
-### Creating Custom Agents
+Create a file with your agent (e.g., `my_agent.py`):
 
 ```python
 from deepagents import create_deep_agent
@@ -89,41 +100,77 @@ from deepagents.backends import FilesystemBackend
 from langgraph.checkpoint.memory import MemorySaver
 import os
 
-# Agent discovers workspace automatically
+# The agent automatically discovers the workspace
 workspace = os.getenv('DEEPAGENT_WORKSPACE_ROOT', '.')
 
+# Create your custom agent
 agent = create_deep_agent(
+    name="my-custom-agent",  # Optional: name shown in chat interface
     model="anthropic:claude-sonnet-4-20250514",
     backend=FilesystemBackend(root_dir=workspace, virtual_mode=True),
     checkpointer=MemorySaver(),
-    tools=[...your_tools...]
+    tools=[...your_custom_tools...]
 )
 ```
 
-Save this as `my_agent.py` and configure:
+### Configuring the Extension to Use Your Agent
+
+Set the `DEEPAGENT_AGENT_SPEC` environment variable to point to your agent:
+
 ```bash
-DEEPAGENT_AGENT_SPEC=./my_agent.py:agent
+# Format: path/to/file.py:variable_name
+export DEEPAGENT_AGENT_SPEC=./my_agent.py:agent
 ```
+
+Then launch as normal:
+
+```bash
+# With the launcher (recommended)
+deepagent-lab
+
+# Or manually
+jupyter lab --port 8888 --IdentityProvider.token=$DEEPAGENT_JUPYTER_TOKEN
+```
+
+The chat interface will automatically display your custom agent's name (if you set the `name` attribute).
 
 ### Agent Portability
 
-Agents configured for deepagent-lab work seamlessly in [deepagent-dash](https://github.com/dkedar7/deepagent-dash):
+Agents configured for deepagent-lab work seamlessly with [deepagent-dash](https://github.com/dkedar7/deepagent-dash):
 
 ```bash
-# Same .env file works for both!
-DEEPAGENT_AGENT_SPEC=./my_agent.py:agent
-DEEPAGENT_WORKSPACE_ROOT=/path/to/project
+# Same configuration works for both tools!
+export DEEPAGENT_AGENT_SPEC=./my_agent.py:agent
+export DEEPAGENT_WORKSPACE_ROOT=/path/to/project
 
 # Run in JupyterLab
-jupyter lab
+deepagent-lab
 
 # Or run in Dash
 deepagent-dash run
 ```
 
+All environment variables use the `DEEPAGENT_` prefix for compatibility.
+
+## Environment Variables
+
+All configuration uses the `DEEPAGENT_` prefix:
+
+| Variable | Purpose | Default | When to Set |
+|----------|---------|---------|-------------|
+| `DEEPAGENT_AGENT_SPEC` | Custom agent location (`path:variable`) | Uses default agent | Optional: for custom agents |
+| `DEEPAGENT_WORKSPACE_ROOT` | Working directory for agent | JupyterLab root | Optional |
+| `DEEPAGENT_JUPYTER_SERVER_URL` | Jupyter server URL | Auto-detected | Manual config only |
+| `DEEPAGENT_JUPYTER_TOKEN` | Jupyter auth token | Auto-generated | Manual config only |
+| `ANTHROPIC_API_KEY` | Anthropic API key | None | Required for default agent |
+
+When using the `deepagent-lab` launcher, `DEEPAGENT_JUPYTER_SERVER_URL` and `DEEPAGENT_JUPYTER_TOKEN` are automatically configured and don't need to be set.
+
+See [.env.example](.env.example) for a complete configuration template.
+
 ## Interface Controls
 
-- **⟳ Reload**: Reload your agent without restarting JupyterLab
+- **⟳ Reload**: Reload your agent without restarting JupyterLab (useful during agent development)
 - **Clear**: Start a new conversation thread
 - **Status Indicator**:
   - 🟢 Green: Agent ready
