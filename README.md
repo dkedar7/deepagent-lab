@@ -1,7 +1,5 @@
-# DeepAgent Lab
-
 <p align="center">
-  <a href="https://fastdash.app/"><img src="https://storage.googleapis.com/deepagents/cover.png" alt="Fast Dash" width=300></a>
+  <a href="https://fastdash.app/"><img src="https://storage.googleapis.com/deepagents/cover.png" alt="Fast Dash" width=600></a>
 </p>
 <p align="center">
     <em>Bring LangChain agents into your JupyterLab workflow</em>
