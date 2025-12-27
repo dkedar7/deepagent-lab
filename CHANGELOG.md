@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2025-12-26
+
+### Added
+- **Zero-Configuration Launcher**: New `deepagent-lab` command that automatically configures Jupyter server settings
+  - Auto-detects available ports using socket programming
+  - Generates secure authentication tokens with `secrets.token_urlsafe(32)`
+  - Sets `DEEPAGENT_JUPYTER_SERVER_URL` and `DEEPAGENT_JUPYTER_TOKEN` environment variables automatically
+  - Supports all `jupyter lab` arguments (e.g., `--no-browser`, `--port`)
+  - See [JUPYTER_AUTO_CONFIG.md](JUPYTER_AUTO_CONFIG.md) for details
+
+- **Dynamic Agent Name Display**: Chat interface now displays custom agent names
+  - Reads the `name` attribute from agent objects
+  - Updates dynamically when agents are switched via `DEEPAGENT_AGENT_SPEC`
+  - Falls back to "Deep Agents" if no name is set
+
+- **Custom Logo Integration**: Extension now uses custom DeepAgent Lab logo
+  - Theme-aware SVG icon in sidebar and command palette
+  - Centralized icon definitions in `src/icons.ts`
+  - Professional branding throughout the interface
+
+### Changed
+- **Improved README**: Completely restructured documentation
+  - Launcher command featured as recommended approach
+  - Manual configuration shown as alternative method
+  - Dedicated "Using Custom Agents" section with clear examples
+  - Simplified Quick Start instructions
+  - Enhanced environment variables reference table
+
+- **Icon-Only Sidebar Tab**: Cleaner sidebar appearance
+  - Removed label text from sidebar tab (icon only)
+  - Moved extension to bottom of sidebar for better organization
+  - Agent name still displayed in chat window header
+  - Tooltip shows "Deep Agents" on hover
+
+### Technical Details
+- Added `[project.scripts]` entry point in `pyproject.toml` for launcher command
+- Created `deepagent_lab/launcher.py` with port detection and token generation
+- Modified health check endpoint to return agent name when available
+- Updated chat widget to display dynamic agent names
+- Removed obsolete auto-configuration code from extension initialization
+
 ## [0.1.3] - 2025-12-14
 
 ### Added
