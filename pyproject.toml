@@ -29,6 +29,9 @@ dependencies = [
 ]
 dynamic = ["version", "description", "authors", "urls", "keywords"]
 
+[project.scripts]
+deepagent-lab = "deepagent_lab.launcher:main"
+
 [project.optional-dependencies]
 dev = [
     "jupyter_server[test]>=2.0.1,<3",

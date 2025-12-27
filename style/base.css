@@ -88,6 +88,11 @@
   overflow: hidden;
 }
 
+/* Widget tab styling - Add spacing between icon and label */
+.deepagents-chat-widget .lm-TabBar-tabIcon {
+  margin-right: 8px;
+}
+
 .deepagents-chat-container {
   display: flex;
   flex-direction: column;

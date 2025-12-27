@@ -257,11 +257,29 @@ class HealthHandler(APIHandler):
             agent = get_agent()
             is_loaded = agent.agent is not None
 
-            self.finish(json.dumps({
+            # Try to get agent name if available
+            agent_name = None
+            if is_loaded:
+                # Debug: log what attributes the agent has
+                self.log.info(f"Agent type: {type(agent.agent)}")
+
+                if hasattr(agent.agent, 'name'):
+                    agent_name = agent.agent.name
+                    self.log.info(f"Found agent name: {agent_name}")
+                else:
+                    self.log.info("Agent does not have 'name' attribute")
+
+            response = {
                 "status": "healthy" if is_loaded else "agent_not_loaded",
                 "agent_loaded": is_loaded,
                 "message": "Agent is ready" if is_loaded else "Agent module not found or failed to load"
-            }))
+            }
+
+            # Include agent name if available
+            if agent_name:
+                response["agent_name"] = agent_name
+
+            self.finish(json.dumps(response))
         except Exception as e:
             self.log.error(f"Error checking health: {e}", exc_info=True)
             raise HTTPError(500, str(e))
