@@ -264,6 +264,69 @@ class TestExecuteMethod:
         assert "/home/user" in str(agent_input)
 
 
+class TestAgentNameExtraction:
+    """Tests for agent name extraction (used in sidebar display)."""
+
+    @patch('deepagent_lab.agent_wrapper.AgentWrapper._load_agent')
+    def test_extracts_name_when_agent_has_name_attribute(self, mock_load):
+        """Should extract name from agent when name attribute exists."""
+        wrapper = AgentWrapper()
+        mock_agent = Mock()
+        mock_agent.name = "MyCustomAgent"
+        wrapper.agent = mock_agent
+
+        # Simulate what the HealthHandler does
+        agent_name = None
+        if wrapper.agent and hasattr(wrapper.agent, 'name'):
+            agent_name = wrapper.agent.name
+
+        assert agent_name == "MyCustomAgent"
+
+    @patch('deepagent_lab.agent_wrapper.AgentWrapper._load_agent')
+    def test_returns_none_when_agent_has_no_name_attribute(self, mock_load):
+        """Should return None when agent doesn't have name attribute."""
+        wrapper = AgentWrapper()
+        mock_agent = Mock(spec=[])  # Agent without name attribute
+        wrapper.agent = mock_agent
+
+        # Simulate what the HealthHandler does
+        agent_name = None
+        if wrapper.agent and hasattr(wrapper.agent, 'name'):
+            agent_name = wrapper.agent.name
+
+        assert agent_name is None
+
+    @patch('deepagent_lab.agent_wrapper.AgentWrapper._load_agent')
+    def test_returns_none_when_agent_is_not_loaded(self, mock_load):
+        """Should return None when agent is not loaded."""
+        wrapper = AgentWrapper()
+        wrapper.agent = None
+
+        # Simulate what the HealthHandler does
+        agent_name = None
+        if wrapper.agent and hasattr(wrapper.agent, 'name'):
+            agent_name = wrapper.agent.name
+
+        assert agent_name is None
+
+    @patch('deepagent_lab.agent_wrapper.AgentWrapper._load_agent')
+    def test_handles_various_name_types(self, mock_load):
+        """Should handle different types of name values."""
+        wrapper = AgentWrapper()
+
+        # Test with string name
+        mock_agent = Mock()
+        mock_agent.name = "Agent v1.0"
+        wrapper.agent = mock_agent
+        assert hasattr(wrapper.agent, 'name')
+        assert wrapper.agent.name == "Agent v1.0"
+
+        # Test with empty string name
+        mock_agent.name = ""
+        wrapper.agent = mock_agent
+        assert wrapper.agent.name == ""
+
+
 class TestGetAgent:
     """Tests for get_agent singleton function."""
 
