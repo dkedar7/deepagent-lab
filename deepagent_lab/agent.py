@@ -13,10 +13,8 @@ from typing import Annotated
 from dotenv import load_dotenv
 load_dotenv()
 
-from deepagents import create_deep_agent
-from deepagents.backends import FilesystemBackend
+from langgraph_stream_parser.demo import create_default_agent as _build_default_agent
 from langchain.chat_models import init_chat_model
-from langgraph.checkpoint.memory import MemorySaver
 
 # Import configuration
 from deepagent_lab import config
@@ -514,24 +512,18 @@ Assistant:
 - NEVER write a code cell and leave it unexecuted.
 """
 
-# Create backend with workspace configuration
-backend = FilesystemBackend(
-    root_dir=str(WORKSPACE),
-    virtual_mode=config.VIRTUAL_MODE
-)
-
-# Build the chat model so MODEL_TEMPERATURE is actually applied. Previously the
-# value was read from config but never passed anywhere.
+# Build the chat model so MODEL_TEMPERATURE is actually applied.
 chat_model = init_chat_model(MODEL_NAME, temperature=MODEL_TEMPERATURE)
 
-# Create agent with configuration
-agent = create_deep_agent(
-    name="Default Agent",
+# Build via the shared demo factory (owns the FilesystemBackend + checkpointer
+# boilerplate). Lab supplies its nbformat notebook tools + system prompt.
+agent = _build_default_agent(
+    workspace=str(WORKSPACE),
     model=chat_model,
+    name="Default Agent",
     system_prompt=system_prompt,
-    backend=backend,
-    checkpointer=MemorySaver(),
     tools=[get_notebook_state, create_notebook, insert_code_cell, modify_cell, execute_cell],
+    virtual_mode=config.VIRTUAL_MODE,
 )
 
 # Log configuration if in debug mode
