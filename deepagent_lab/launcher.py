@@ -41,6 +41,13 @@ def main():
     # Parse command line arguments
     args = sys.argv[1:]
 
+    # --show-config: print the resolved config (value, source, env var / TOML
+    # key for each) and exit — no need to remember the DEEPAGENT_* names.
+    if "--show-config" in args:
+        from deepagent_lab.config import LabConfig
+        print(LabConfig.resolve().describe())
+        return
+
     # Check if user specified a port
     user_port = None
     port_specified = False
