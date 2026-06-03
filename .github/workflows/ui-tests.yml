@@ -33,13 +33,15 @@ jobs:
 
       - name: Build + install the extension
         run: |
-          # --no-immutable: CI is allowed to refresh the lockfile rather than
-          # failing the build when it's slightly out of sync.
+          # Mirrors the proven local install order (setup_and_install.sh):
+          # build the prebuilt labextension first, then install + link.
+          # --no-immutable lets CI refresh the lockfile instead of failing.
           jlpm install --no-immutable
-          # Editable install runs the labextension build hook; runtime deps
-          # (langgraph, langchain-core, langgraph-stream-parser, deepagents)
-          # come with it — the stub agent needs no model/API key.
+          jlpm build:prod
+          # Editable install brings the runtime deps (langgraph, langchain-core,
+          # langgraph-stream-parser, deepagents) — the stub agent needs no key.
           pip install -e ".[dev]"
+          jupyter server extension enable deepagent_lab
           jupyter labextension develop . --overwrite
           jupyter labextension list 2>&1 | grep -i deepagent
 

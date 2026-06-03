@@ -51,7 +51,7 @@ jobs:
       run: |
         python -c "import deepagent_lab; print('✓ deepagent_lab module found')"
         python -c "import deepagent_lab.config; print('✓ config module found')"
-        python -c "import deepagent_lab.langgraph_utils; print('✓ langgraph_utils module found')"
+        python -c "import deepagent_lab.agent_wrapper; print('✓ agent_wrapper module found')"
 
     - name: Run tests
       run: |
