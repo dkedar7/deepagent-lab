@@ -7,27 +7,29 @@
    ============================================ */
 
 .deepagents-chat-widget {
-  /* ===== Colors - Light Theme ===== */
-  --da-background: #fafafa;
-  --da-surface: #ffffff;
-  --da-surface-elevated: #f8f8f8;
-  --da-foreground: #1e293b;
-  --da-foreground-muted: #64748b;
-  --da-foreground-subtle: #94a3b8;
+  /* ===== Colors — mapped to JupyterLab theme variables so the panel tracks
+     the active light/dark theme. Light hex values are kept as fallbacks for
+     contexts where the --jp-* variables aren't defined. ===== */
+  --da-background: var(--jp-layout-color1, #fafafa);
+  --da-surface: var(--jp-layout-color1, #ffffff);
+  --da-surface-elevated: var(--jp-layout-color2, #f8f8f8);
+  --da-foreground: var(--jp-ui-font-color1, #1e293b);
+  --da-foreground-muted: var(--jp-ui-font-color2, #64748b);
+  --da-foreground-subtle: var(--jp-ui-font-color3, #94a3b8);
 
   /* Primary & Status Colors */
-  --da-primary: #2563eb;
-  --da-primary-hover: #1d4ed8;
-  --da-primary-active: #1e40af;
-  --da-success: #10b981;
-  --da-warning: #f59e0b;
-  --da-error: #ef4444;
-  --da-error-bg: #fee2e2;
+  --da-primary: var(--jp-brand-color1, #2563eb);
+  --da-primary-hover: var(--jp-brand-color0, #1d4ed8);
+  --da-primary-active: var(--jp-brand-color0, #1e40af);
+  --da-success: var(--jp-success-color1, #10b981);
+  --da-warning: var(--jp-warn-color1, #f59e0b);
+  --da-error: var(--jp-error-color1, #ef4444);
+  --da-error-bg: var(--jp-error-color3, #fee2e2);
 
   /* Borders */
-  --da-border: #e5e7eb;
-  --da-border-strong: #cbd5e1;
-  --da-border-subtle: #e0e0e0;
+  --da-border: var(--jp-border-color2, #e5e7eb);
+  --da-border-strong: var(--jp-border-color1, #cbd5e1);
+  --da-border-subtle: var(--jp-border-color2, #e0e0e0);
 
   /* Shadows */
   --da-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -98,7 +100,7 @@
   flex-direction: column;
   height: 100%;
   width: 100%;
-  background: #ffffff;
+  background: var(--da-surface);
   overflow-x: hidden;
 }
 
@@ -216,7 +218,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--da-space-4);
-  background: #ffffff;
+  background: var(--da-background);
 }
 
 .deepagents-chat-empty {
@@ -225,7 +227,7 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #9ca3af;
+  color: var(--da-foreground-subtle);
   text-align: center;
   padding: 32px;
 }
@@ -239,7 +241,7 @@
 .deepagents-chat-hint {
   font-size: 12px;
   font-style: italic;
-  color: #6b7280;
+  color: var(--da-foreground-muted);
 }
 
 /* Message entrance animation */
@@ -266,7 +268,7 @@
 }
 
 .deepagents-message-user {
-  background: #f5f5f5;
+  background: var(--da-surface-elevated);
   color: var(--da-foreground);
   border-radius: var(--da-radius-md);
   margin-left: 0;
@@ -564,13 +566,13 @@
 .deepagents-message-intermediates {
   margin-bottom: 10px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--da-border);
   opacity: 0.65;
 }
 
 .deepagents-intermediate-message {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--da-foreground-muted);
   padding: 4px 0;
   font-style: italic;
   line-height: 1.5;
@@ -608,7 +610,7 @@
   padding: 2px 0;
   list-style: none;
   cursor: pointer;
-  color: #334155;
+  color: var(--da-foreground);
 }
 
 .deepagents-tool-call-summary::-webkit-details-marker {
@@ -632,8 +634,8 @@
 .deepagents-tool-call-args {
   margin: 10px 0 0 0;
   padding: 10px 12px;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
+  background: var(--da-surface-elevated);
+  border-top: 1px solid var(--da-border);
   border-radius: 0 0 6px 6px;
   font-size: 10px;
   font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
@@ -641,14 +643,14 @@
   overflow-x: auto;
   /* white-space: pre-wrap; */
   word-wrap: break-word;
-  color: #475569;
+  color: var(--da-foreground-muted);
 }
 
 .deepagents-tool-call-output {
   margin: 10px 0 0 0;
   padding: 10px 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--da-surface-elevated);
+  border: 1px solid var(--da-border);
   border-radius: 4px;
   font-size: 10px;
   font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
@@ -662,9 +664,9 @@
 .deepagents-todo-list {
   margin: 12px 0;
   padding: 12px 16px;
-  background: #f9fafb;
+  background: var(--da-surface-elevated);
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--da-border);
 }
 
 .deepagents-todo-item {
@@ -691,11 +693,11 @@
 
 .deepagents-todo-content {
   flex: 1;
-  color: #374151;
+  color: var(--da-foreground);
 }
 
 .deepagents-todo-completed .deepagents-todo-marker {
-  color: #10b981;
+  color: var(--da-success);
 }
 
 .deepagents-todo-completed .deepagents-todo-content {
@@ -703,16 +705,16 @@
 }
 
 .deepagents-todo-in_progress .deepagents-todo-marker {
-  color: #3b82f6;
+  color: var(--da-primary);
 }
 
 .deepagents-todo-in_progress .deepagents-todo-content {
   font-weight: 500;
-  color: #1e293b;
+  color: var(--da-foreground);
 }
 
 .deepagents-todo-pending .deepagents-todo-marker {
-  color: #9ca3af;
+  color: var(--da-foreground-subtle);
   opacity: 0.6;
 }
 
@@ -731,7 +733,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #94a3b8;
+  background: var(--da-foreground-subtle);
   animation: typing 1.4s infinite ease-in-out;
 }
 
@@ -875,12 +877,12 @@
 }
 
 .deepagents-chat-messages::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--da-border-strong);
   border-radius: 3px;
 }
 
 .deepagents-chat-messages::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--da-foreground-subtle);
 }
 
 /* Interrupt UI - Professional styling */
