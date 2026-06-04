@@ -9,10 +9,8 @@ import { expect, test } from '@jupyterlab/galata';
  * per-message timestamps (the only dynamic content). Runs against the
  * model-free stub agent, so it's deterministic and needs no API key.
  *
- * Light theme only: the sidebar currently renders the same regardless of
- * JupyterLab's theme (it doesn't consume the `--jp-*` theme variables), so a
- * dark capture would just duplicate this one. If the sidebar is taught to
- * honor the dark theme, add a dark variant here to guard it.
+ * Captured in both light + dark JupyterLab themes — the sidebar consumes the
+ * `--jp-*` theme variables, so it must track the active theme.
  *
  * Baselines are generated and checked in the same CI environment (Galata
  * bundles its own Playwright, so an external pinned image would mismatch
@@ -39,23 +37,29 @@ async function openHealthyChat(page: any) {
   });
 }
 
-test('chat sidebar — light', async ({ page }) => {
-  await page.theme.setLightTheme();
+for (const theme of ['light', 'dark'] as const) {
+  test(`chat sidebar — ${theme}`, async ({ page }) => {
+    if (theme === 'dark') {
+      await page.theme.setDarkTheme();
+    } else {
+      await page.theme.setLightTheme();
+    }
 
-  await openHealthyChat(page);
-  const chat = page.locator('.deepagents-chat-container');
-  const masks = { ...shot, mask: [page.locator('.deepagents-message-time')] };
+    await openHealthyChat(page);
+    const chat = page.locator('.deepagents-chat-container');
+    const masks = { ...shot, mask: [page.locator('.deepagents-message-time')] };
 
-  // Ready state (header + status + "agent ready" system message).
-  await expect(chat).toHaveScreenshot('sidebar-ready-light.png', masks);
+    // Ready state (header + status + "agent ready" system message).
+    await expect(chat).toHaveScreenshot(`sidebar-ready-${theme}.png`, masks);
 
-  // Conversation state (user + assistant bubble styling).
-  await page.locator('.deepagents-chat-input').fill('ping');
-  await page.locator('.deepagents-send-button').click();
-  await expect(
-    page
-      .locator('.deepagents-message-assistant')
-      .filter({ hasText: 'stub reply: ping' })
-  ).toBeVisible({ timeout: 30_000 });
-  await expect(chat).toHaveScreenshot('sidebar-conversation-light.png', masks);
-});
+    // Conversation state (user + assistant bubble styling).
+    await page.locator('.deepagents-chat-input').fill('ping');
+    await page.locator('.deepagents-send-button').click();
+    await expect(
+      page
+        .locator('.deepagents-message-assistant')
+        .filter({ hasText: 'stub reply: ping' })
+    ).toBeVisible({ timeout: 30_000 });
+    await expect(chat).toHaveScreenshot(`sidebar-conversation-${theme}.png`, masks);
+  });
+}
